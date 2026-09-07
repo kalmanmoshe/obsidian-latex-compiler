@@ -1,4 +1,4 @@
-import { isTexSourceExtension } from 'src/ast/latexAbstractSyntaxTree';
+import { isTexSourceExtension } from 'src/latexPreprocessor/ast/latexAbstractSyntaxTree';
 import { CODE_BLOCK_NAME_SEPARATOR, extractStemAndExtension } from 'src/latexRender/resolvers/paths';
 
 export enum LatexSourceType {
@@ -18,14 +18,13 @@ export class LatexDependency {
 		public extension: string,
 		public isTex: boolean,
 		public sourceType: LatexSourceType,
-		public autoUse?: boolean,
 	) { }
 
 	get name(): string {
 		return `${this.stem}.${this.extension}`;
 	}
 
-	get sourcePath (): string {
+	get sourcePath(): string {
 		return this.path.split(CODE_BLOCK_NAME_SEPARATOR)[0];
 	}
 
@@ -38,13 +37,9 @@ export function createDependency(
 	content: string | Uint8Array,
 	vaultRootedPath: string,
 	sourceType: LatexSourceType,
-	config: {
-		isTex?: boolean;
-		autoUse?: boolean;
-	} = {},
+	isTex?: boolean
 ): LatexDependency {
-	let { isTex, autoUse } = config;
 	const { stem, extension } = extractStemAndExtension(vaultRootedPath);
 	isTex = isTex || isTexSourceExtension(extension);
-	return new LatexDependency(content, stem, vaultRootedPath, extension, isTex, sourceType, autoUse);
+	return new LatexDependency(content, stem, vaultRootedPath, extension, isTex, sourceType);
 }

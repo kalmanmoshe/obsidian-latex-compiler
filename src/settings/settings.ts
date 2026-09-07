@@ -62,7 +62,6 @@ export interface PackageCacheData {
 }
 
 export interface LatexCompilerPluginSettings {
-	autoloadedVfsFilesDir: string;
 	virtualFilesFromCodeBlocks: boolean;
 
 	invertColorsInDarkMode: boolean;
@@ -75,16 +74,25 @@ export interface LatexCompilerPluginSettings {
 	physicalCacheLocation: string;
 	cache: CacheJson;
 	packageCache: Array<StringMap>;
-	saveLogs: boolean;
 	overflowStrategy: OverflowStrategy;
 	compiler: CompilerType;
+
+	/**
+	 * Enables the experimental AST-based preprocessing pipeline.
+	 *
+	 * This may transform LaTeX source more aggressively than the
+	 * default TikZJax-compatible preprocessing path.
+	 */
+	experimentalSmartPreprocessing: boolean;
+
+	autoloadedVfsFilesDir: string;
 }
 
 export const DEFAULT_SETTINGS: LatexCompilerPluginSettings = {
-	autoloadedVfsFilesDir: '',
 	virtualFilesFromCodeBlocks: false,
 	// style settings
 	invertColorsInDarkMode: true,
+	//TODO: put in settings tab
 	autoRemoveWhitespace: true,
 	dirtyResultFiles: [],
 	//its the public mirror of `https://texlive2.swiftlatex.com/` (which is down and not maintained any more) maintained by Texlyre
@@ -93,9 +101,12 @@ export const DEFAULT_SETTINGS: LatexCompilerPluginSettings = {
 	physicalCacheLocation: '',
 	cache: {},
 	packageCache: [{}, {}, {}, {}],
-	saveLogs: false,
 	overflowStrategy: OverflowStrategy.Downscale,
 	compiler: CompilerType.PdfTeX,
+	
+	experimentalSmartPreprocessing: false,
+
+	autoloadedVfsFilesDir: '',
 };
 
 export const SOURCE_REVERIFICATION_TIME_MS = 1000;

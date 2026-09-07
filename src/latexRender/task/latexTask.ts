@@ -16,9 +16,8 @@ import { hashLatexContent } from '../cache/compilerCache';
 import { CompilePipeline, ResultFileFormat, SOURCE_REVERIFICATION_TIME_MS } from 'src/settings/settings';
 import { LatexRenderChild } from './latexRenderChild';
 import { getLatexCodeBlockDefinition, LatexCodeBlockDefinition } from '../codeBlockTypes';
-import { LatexSourceType } from 'src/dependency/latexDependency';
+import { LatexSourceType } from 'src/latexRender/latexDependency';
 import { getCacheId } from '../cache/resultFileCache';
-import { LatexSourceProcessor } from 'src/dependency/latexSourceProcessor';
 
 /**
  * sets the section information for the task.
@@ -313,15 +312,12 @@ export class LatexTask {
 			return;
 		}
 
-		const processor = new LatexSourceProcessor(this.plugin.latexRenderer.vfs, this.plugin.app);
-
-		const result = await processor.parseFile(
-				this.getContent(),
-				this.sourcePath,
-				this.sourceType,
-			);
-
-		this.setProcessedContent(result.content);
+		const result = await this.plugin.latexRenderer.preprocessor.process(
+			this.getContent(),
+			this.sourcePath,
+			this.definition.sourceType
+		)
+		this.setProcessedContent(result);
 
 		this.processed = true;
 	}

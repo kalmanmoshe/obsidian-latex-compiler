@@ -1,4 +1,4 @@
-
+ 
 export class VirtualFileSystem {
 	private autoUseFilePaths = new Set<string>();
 

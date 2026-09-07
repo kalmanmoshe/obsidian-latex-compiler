@@ -12,7 +12,7 @@ const REFRESH_TIMEOUT_MS = 500;
 
 const refreshAutoUseFiles = debounce(
 	(plugin: LatexCompilerPlugin) => {
-		plugin.refreshAutoUseFiles(false, true);
+		plugin.latexRenderer.preprocessor.refresh(false, true);
 	},
 	REFRESH_TIMEOUT_MS,
 	true,

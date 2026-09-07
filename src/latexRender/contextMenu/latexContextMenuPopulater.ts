@@ -111,7 +111,9 @@ export class LatexContextMenuPopulater {
 
 		this.addCommonItems();
 		this.addFormatSpecificItems();
-		this.addDebugDisplayItems();
+		if (!__PRODUCTION__) {
+			this.addDebugDisplayItems();
+		}
 	}
 
 	private findOutput(): RenderOutput {
@@ -186,6 +188,15 @@ export class LatexContextMenuPopulater {
 		);
 
 		this.addItem(
+			'Save render as attachment',
+			'file-plus',
+			async () => {
+				await this.saveRenderAsAttachment();
+			},
+			{ hiddenOnError: true },
+		);
+
+		this.addItem(
 			'Reveal in file explorer',
 			'folder',
 			async () => {
@@ -255,6 +266,52 @@ export class LatexContextMenuPopulater {
 			item.setIcon(icon);
 			item.onClick(onClick);
 		});
+	}
+
+	private async saveRenderAsAttachment() {
+		if (this.isError) return;
+
+		const format: ResultFileFormat =
+			this.output.type === 'svg' ? 'svg' : 'pdf';
+
+		const resultFile = await this.resultFileCache.getResultFile(
+			this.rawHash,
+			this.sourcePath,
+			this.compilePipeline,
+			format
+		);
+
+		if (resultFile === undefined) {
+			new Notice('Rendered file is no longer available.');
+			return;
+		}
+
+		const fileName = `latex-render.${format}`;
+
+		const attachmentPath =
+			await this.plugin.app.fileManager.getAvailablePathForAttachment(
+				fileName,
+				this.sourcePath,
+			);
+
+		if (typeof resultFile.data === 'string') {
+			await this.plugin.app.vault.create(
+				attachmentPath,
+				resultFile.data,
+			);
+		} else {
+			await this.plugin.app.vault.createBinary(
+				attachmentPath,
+				resultFile.data.buffer.slice(
+					resultFile.data.byteOffset,
+					resultFile.data.byteOffset + resultFile.data.byteLength,
+				) as ArrayBuffer,
+			);
+		}
+		const embed = `![[${attachmentPath}]]`;
+		await navigator.clipboard.writeText(embed);
+
+		new Notice(`Saved render to ${attachmentPath} and copied embed to clipboard.`);
 	}
 
 	private revealFileInExplorer() {

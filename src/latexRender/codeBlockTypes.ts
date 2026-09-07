@@ -1,4 +1,4 @@
-import { LatexSourceType } from 'src/dependency/latexDependency';
+import { LatexSourceType } from 'src/latexRender/latexDependency';
 import { CompilePipeline, ResultFileFormat } from 'src/settings/settings';
 
 export interface LatexCodeBlockDefinition {

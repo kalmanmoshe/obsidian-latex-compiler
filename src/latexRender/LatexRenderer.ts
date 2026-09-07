@@ -4,7 +4,7 @@ import LatexCompilerPlugin from '../main';
 import { CompilePipeline, CompilerType, ResultFileFormat } from 'src/settings/settings.js';
 import { insertPdf } from './pdfConversion/pdfToHtml';
 import parseLatexLog, { refactorLogToErrorMessage } from './logs/humanReadableLogs';
-import { VirtualFileSystem } from '../dependency/virtualFileSystem';
+import { VirtualFileSystem } from '../latexPreprocessor/virtualFileSystem';
 import { ProcessedLog } from './logs/latexLogParser';
 import PdfTeXCompiler from './compiler/swiftlatexpdftex/PdfTeXCompiler';
 import { LatexTask } from './task/latexTask';
@@ -20,6 +20,7 @@ import { ErrorLevel, ErrorMessage, errorMessageDiv } from './errors/errorDisplay
 import { LatexCompilationError, pluginErrorToErrorMessage, toErrorString, UserFacingPluginError } from './errors/pluginErrors';
 import { LatexRenderCompilationSession } from './latexRenderCompilationSession';
 import { getCacheId } from './cache/resultFileCache';
+import { BasicLatexPreprocessor, LatexPreprocessor, SmartLatexPreprocessor } from 'src/latexPreprocessor/LatexPreprocessor';
 
 export async function waitFor(condFunc: () => boolean): Promise<void> {
 	while (!condFunc()) {
@@ -31,7 +32,7 @@ export async function waitFor(condFunc: () => boolean): Promise<void> {
 
 export class LatexRenderer {
 	plugin: LatexCompilerPlugin;
-	vfs: VirtualFileSystem = new VirtualFileSystem();
+	preprocessor: LatexPreprocessor;
 	compiler?: LatexCompiler;
 	cache: CompilerCache;
 	queue?: LatexRenderQueue;
@@ -44,6 +45,24 @@ export class LatexRenderer {
 
 			this.queue = new LatexRenderQueue((t) => this.processAndRenderLatexTask(t));
 		}
+		this.ensurePreprocessor();
+	}
+
+	ensurePreprocessor() {
+		//It might be called before onload
+		if (!this.plugin) return;
+
+		const shouldBeSmart = this.plugin.settings.experimentalSmartPreprocessing;
+
+		const isSmart = this.preprocessor instanceof SmartLatexPreprocessor;
+
+		if (this.preprocessor !== undefined && shouldBeSmart === isSmart) {
+			return;
+		}
+
+		this.preprocessor = shouldBeSmart
+			? new SmartLatexPreprocessor(this.plugin, new VirtualFileSystem(), this.plugin.app)
+			: new BasicLatexPreprocessor();
 	}
 
 	switchCompiler(): Promise<void> {

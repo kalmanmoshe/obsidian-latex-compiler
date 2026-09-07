@@ -2,9 +2,9 @@ import { App, normalizePath, TAbstractFile, TFile, TFolder } from 'obsidian';
 import { getLatexTaskSectionInfosFromFile } from './taskSectionInformation';
 import { extractCodeBlockMetadata, extractCodeBlockName } from './latexSourceFromFile';
 import { codeBlockToContent } from 'obsidian-dev-utils';
-import { LatexSourceType } from 'src/dependency/latexDependency';
+import { LatexSourceType } from 'src/latexRender/latexDependency';
 import { getLatexCodeBlockDefinition } from '../codeBlockTypes';
-import { isTexSourceExtension } from 'src/ast/latexAbstractSyntaxTree';
+import { isTexSourceExtension } from 'src/latexPreprocessor/ast/latexAbstractSyntaxTree';
 import { UserFacingPluginError } from '../errors/pluginErrors';
 import { TEXT_EXTENSIONS } from './extensions';
 

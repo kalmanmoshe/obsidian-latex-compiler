@@ -1,7 +1,7 @@
-import { createDependency, LatexDependency } from "src/dependency/latexDependency";
+import { createDependency, LatexDependency } from "src/latexRender/latexDependency";
 import { EngineCommands, LatexCompilationSession, WorkerMessage } from "./compiler/base/compilerBase/engine";
 import { LatexRenderer } from "./latexRenderer";
-import { isTexSourceExtension } from "src/ast/latexAbstractSyntaxTree";
+import { isTexSourceExtension } from "src/latexPreprocessor/ast/latexAbstractSyntaxTree";
 import { resolvePathRelToVault, extractStemAndExtension, resolveDependencyContent, hasExtension } from "./resolvers/paths";
 import { hashContent } from "./cache/compilerCache";
 import { UserFacingPluginError } from "./errors/pluginErrors";
@@ -188,9 +188,7 @@ export class LatexRenderCompilationSession implements LatexCompilationSession {
 
         const { content, sourceType } = await resolveDependencyContent(resolvedPath, this.renderer.plugin.app);
 
-        return createDependency(content, resolvedPath, sourceType, {
-            isTex: isTexSourceExtension(extension),
-        });
+        return createDependency(content, resolvedPath, sourceType, isTexSourceExtension(extension));
     }
 
     private getVirtualPath(dep: LatexDependency): string {

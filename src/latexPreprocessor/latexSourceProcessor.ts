@@ -1,11 +1,11 @@
 import {
 	LatexAbstractSyntaxTree,
-} from 'src/ast/latexAbstractSyntaxTree';
+} from 'src/latexPreprocessor/ast/latexAbstractSyntaxTree';
 import {
 	resolvePathRelToVault,
 	CODE_BLOCK_NAME_SEPARATOR,
 } from '../latexRender/resolvers/paths';
-import { LatexDependency, LatexSourceType } from 'src/dependency/latexDependency';
+import { LatexDependency, LatexSourceType } from 'src/latexRender/latexDependency';
 import { App } from 'obsidian';
 import { findLatexInputReferences } from './latexInputScanner';
 import { VirtualFileSystem } from './virtualFileSystem';
@@ -20,7 +20,6 @@ export interface ParsedLatexFile {
 	path: string;
 	dependencies: LatexDependencyNode[];
 }
-
 
 export class LatexSourceProcessor {
 	constructor(
@@ -46,6 +45,7 @@ export class LatexSourceProcessor {
 			sourcePath,
 		);
 	}
+
 	private async processTikzCodeBlock(
 		content: string,
 		sourcePath: string,
@@ -67,8 +67,8 @@ export class LatexSourceProcessor {
 		// Ideally this method only emits \input references.
 		// It should not require the actual dependency content.
 		ast.addAutoUseDependenciesToPreamble(autoUseFiles);
-		
-		
+
+
 		// Fragment -> complete compilable document.
 		ast.verifyProperDocumentStructure();
 
@@ -101,7 +101,7 @@ export class LatexSourceProcessor {
 }
 
 function getBasePath(sourcePath: string): string {
-	if (sourcePath.contains(CODE_BLOCK_NAME_SEPARATOR)) {
+	if (sourcePath.includes(CODE_BLOCK_NAME_SEPARATOR)) {
 		sourcePath = sourcePath.split(CODE_BLOCK_NAME_SEPARATOR)[0];
 	}
 	return sourcePath;

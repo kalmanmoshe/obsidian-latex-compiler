@@ -4,7 +4,6 @@ import { LatexCompilerSettingTab } from './settings/settingsTab';
 import { getEditorCommands } from './obsidian/editorCommands';
 import { LatexRenderer } from './latexRender/latexRenderer';
 import {
-	getAutoUseFilePaths,
 	onFileCreate,
 	onFileDelete,
 } from './obsidian/fileWatch';
@@ -51,10 +50,10 @@ export default class LatexCompilerPlugin extends Plugin {
 	}
 
 	private async loadLayoutReadyDependencies() {
-		void this.refreshAutoUseFiles(true);
 		// we need to use await here because the codeBlock processor
 		// needs to be loaded before the codeBlocks are processed
 		await this.latexRenderer.onload(this);
+		this.latexRenderer.preprocessor.refresh(true);
 		// processing of the code blocks have layout dependencies
 		try {
 			this.setCodeblocks();
@@ -132,46 +131,17 @@ export default class LatexCompilerPlugin extends Plugin {
 	async saveSettings(didLatexFileLocationChange = false) {
 		await this.saveData(this.settings);
 
+		this.latexRenderer.ensurePreprocessor();
+
 		if (didLatexFileLocationChange) {
 			this.app.workspace.onLayoutReady(() => {
-				this.refreshAutoUseFiles(didLatexFileLocationChange);
+				this.latexRenderer.preprocessor.refresh(true);
 			});
 		}
 	}
 
-	refreshAutoUseFiles(
-		becauseFileLocationUpdated = false,
-		becauseFileUpdated = false,
-	) {
-		const autoUsePaths = getAutoUseFilePaths(
-			this.app.vault,
-			this.settings.autoloadedVfsFilesDir,
-		);
-		
-		this.latexRenderer.vfs.setAutoUseFilePaths(autoUsePaths);
-
-		this.showPreambleLoadedNotice(
-			autoUsePaths.size,
-			becauseFileLocationUpdated,
-			becauseFileUpdated,
-		);
-	}
-
-	private showPreambleLoadedNotice(
-		nExplicitPreambleFiles: number,
-		becauseFileLocationUpdated: boolean,
-		becauseFileUpdated: boolean,
-	) {
-		if (!(becauseFileLocationUpdated || becauseFileUpdated)) return;
-		const prefix = becauseFileLocationUpdated ? 'Loaded ' : 'Successfully reloaded ';
-		const body = [];
-		body.push(`${nExplicitPreambleFiles} preamble files`);
-		const suffix = '.';
-		new Notice(prefix + body.join(' and ') + suffix, 5000);
-	}
-
 	private watchFiles() {
-		this.registerEvent(this.app.vault.on("rename", () => this.refreshAutoUseFiles(false, true)));
+		this.registerEvent(this.app.vault.on("rename", () => this.latexRenderer.preprocessor.refresh(false, true)));
 		this.registerEvent(this.app.vault.on("delete", (file) => onFileDelete(this, file)));
 		this.registerEvent(this.app.vault.on("create", (file) => onFileCreate(this, file)));
 	}

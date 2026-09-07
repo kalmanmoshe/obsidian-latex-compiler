@@ -35,6 +35,7 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 		this.displayGraphSettings();
 		this.displayCachedSettings();
 		this.displayPreambleSettings();
+		this.displayExperimentalSettings();
 	}
 
 	private displayGraphSettings() {
@@ -90,20 +91,8 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 				defValue: this.plugin.settings.compiler,
 			},
 		);
-
-		addToggleSetting(
-			containerEl,
-			(value: boolean) => {
-				this.plugin.settings.saveLogs = value;
-				void this.plugin.saveSettings();
-			},
-			{
-				name: 'Save latex logs',
-				description: 'Whether to save the latex render logs (memory only not physical)',
-				defValue: this.plugin.settings.saveLogs,
-			},
-		);
 	}
+	
 	private displayCachedSettings() {
 		const containerEl = this.containerEl;
 		this.addHeading(containerEl, 'cache', 'database');
@@ -167,12 +156,14 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 
 		const descriptionFragment = activeDocument.createDocumentFragment();
 		const descriptionDetails = activeDocument.createElement('span');
+
 		descriptionDetails.textContent =
 			"When enabled, code blocks with a header specifying a name (e.g., 'name: someAwesomeCode') " +
 			'can be included directly in your LaTeX code using commands like \\include{}. ' +
 			'The name provided in the header identifies the code block as a virtual file. ' +
 			'If disabled, this functionality is unavailable. ' +
 			"Note: the default file extension is '.tex', unless explicitly specified.";
+
 		descriptionFragment.appendChild(descriptionDetails);
 
 		addToggleSetting(
@@ -187,7 +178,47 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 				passToSave: { didFileLocationChange: true },
 			},
 		);
-		
+	}
+
+	private displayExperimentalSettings() {
+		const containerEl = this.containerEl;
+
+		this.addHeading(containerEl, 'Experimental', 'flask-conical');
+
+		const warning = activeDocument.createDocumentFragment();
+
+		const warningText = activeDocument.createElement('div');
+		warningText.textContent =
+			'Warning: these features use experimental LaTeX source preprocessing and may alter or reinterpret the structure of your input. ' +
+			'They are not considered stable and may cause unexpected compilation behavior with some LaTeX documents. ' +
+			'If you encounter problems, disable experimental preprocessing before reporting an issue.';
+
+		warning.appendChild(warningText);
+
+		new Setting(containerEl)
+			.setName('Experimental features')
+			.setDesc(warning);
+
+		addToggleSetting(
+			containerEl,
+			(value: boolean) => {
+				this.plugin.settings.experimentalSmartPreprocessing = value;
+				this.display();
+			},
+			{
+				name: 'Enable experimental smart preprocessing',
+				description:
+					'Enables advanced document-structure processing and automatic inclusion of configured virtual files. ' +
+					'When disabled, TikZ code blocks use the minimal TikZJax-compatible preprocessing path.',
+				defValue:
+					this.plugin.settings.experimentalSmartPreprocessing,
+			},
+		);
+
+		if (!this.plugin.settings.experimentalSmartPreprocessing) {
+			return;
+		}
+
 		addFileSearchSetting(
 			containerEl,
 			async (value: string) => {
@@ -197,10 +228,13 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 			{
 				name: 'Autoloaded virtual files',
 				description:
-					'Specify a file or folder path containing virtual files to automatically include in every LaTeX render. ',
+					'Specify a file or folder containing virtual files to automatically include in every LaTeX render.',
 				placeholder: DEFAULT_SETTINGS.autoloadedVfsFilesDir,
 				defValue: this.plugin.settings.autoloadedVfsFilesDir,
-				debounce: { timeout: FILE_SEARCH_DEBOUNCE_MS, resetTimer: true },
+				debounce: {
+					timeout: FILE_SEARCH_DEBOUNCE_MS,
+					resetTimer: true,
+				},
 			},
 		);
 	}

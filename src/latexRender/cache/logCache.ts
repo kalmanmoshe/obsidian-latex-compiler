@@ -20,30 +20,15 @@ export default class LogCache {
 	 * A cache that maps a hash to a ProcessedLog. This is used to store logs for LaTeX compilations.
 	 * key:
 	 */
-	private cache?: Map<string, CachedLogInfo>;
+	private cache: Map<string, CachedLogInfo> = new Map();
 
 	constructor(plugin: LatexCompilerPlugin) {
 		this.plugin = plugin;
 	}
 
-	private getCache(): Map<string, CachedLogInfo> | undefined {
-		if (!this.plugin.settings.saveLogs) {
-			this.cache = undefined;
-			return undefined;
-		}
-
-		if (!this.cache) {
-			this.cache = new Map();
-		}
-
-		return this.cache;
-	}
-
 	addLog(logCacheKey: string, log: ProcessedLog | string, session: LatexRenderCompilationSession): void {
-		const cache = this.getCache();
-		if (!cache) return;
 		if (typeof log === 'string') log = parseLatexLog(log);
-		cache.set(
+		this.cache.set(
 			logCacheKey, 
 			{ 
 				log, 
@@ -54,11 +39,11 @@ export default class LogCache {
 	}
 
 	getLog(logCacheKey: string): CachedLogInfo | undefined {
-		return this.getCache()?.get(logCacheKey);
+		return this.cache.get(logCacheKey);
 	}
 
 	hasLog(logCacheKey: string): boolean {
-		return !!this.getCache()?.has(logCacheKey);
+		return this.cache.has(logCacheKey);
 	}
 
 	/**
@@ -68,20 +53,18 @@ export default class LogCache {
 		logCacheKey: string,
 		config: { source: string; sourcePath: string },
 	): Promise<CachedLogInfo | undefined> {
-		if (this.hasLog(logCacheKey)) return this.cache!.get(logCacheKey);
+		if (this.hasLog(logCacheKey)) return this.cache.get(logCacheKey);
 
-		let cause = '';
-		if (!this.plugin.settings.saveLogs) {
-			cause =
-				'This may be because log saving is disabled in the settings.\n';
-		}
 		new Notice(
 			'No logs were found for this SVG element.\n' +
-			cause +
 			'Re-rendering the SVG to generate logs. This may take a moment...',
 		);
 
-		const sectionsFromMatching = await findMatchingCodeBlockSections(config.sourcePath, config.source, this.plugin.app);
+		const sectionsFromMatching = await findMatchingCodeBlockSections(
+			config.sourcePath, 
+			config.source, 
+			this.plugin.app
+		);
 
 		if (!sectionsFromMatching)
 			throw new Error('No section found for this source');
@@ -102,7 +85,7 @@ export default class LogCache {
 	}
 
 	removeLog(logCacheKey: string): void {
-		this.getCache()?.delete(logCacheKey);
+		this.cache.delete(logCacheKey);
 	}
 }
 			
