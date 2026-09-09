@@ -1,5 +1,5 @@
 {
-  "id": "obsidian-latex-compiler",
+  "id": "latex-compiler",
   "name": "Latex Compiler",
   "version": "1.0.0-beta",
   "minAppVersion": "0.17.0",

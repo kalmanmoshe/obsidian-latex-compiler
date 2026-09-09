@@ -1,52 +1,20 @@
-import { Md5 } from 'ts-md5';
-import { Config, optimize, PluginConfig } from 'svgo/browser';
+export function optimizeSVG(svg: string): string {
 
-const fastSVGOConfigPlugins: PluginConfig[] = [
-	{ name: 'cleanupAttrs' },
-	{ name: 'removeDoctype' },
-	{ name: 'removeComments' },
-	{ name: 'removeMetadata' },
-	{ name: 'removeTitle' },
-	{ name: 'removeDesc' },
-	{ name: 'convertTransform' },
-	{ name: 'removeEmptyAttrs' },
-	{ name: 'removeEmptyText' },
-	{ name: 'convertPathData', params: { floatPrecision: 3 } },
-	{ name: 'cleanupNumericValues', params: { floatPrecision: 3 } },
-];
-
-const fullSVGOConfigPluginsAddOn: PluginConfig[] = [
-	{ name: 'mergePaths' },
-	{ name: 'convertTransform' },
-	{ name: 'sortAttrs' },
-	{ name: 'removeUnusedNS' },
-	{ name: 'reusePaths' },
-	{ name: 'removeDimensions' },
-];
-
-function generatePrefix(svg: string): string {
-	const hash = Md5.hashStr(svg.trim()).toString();
-	const random = Math.random().toString(36).substring(2, 10);
-	return hash + random;
-}
-
-export function optimizeSVG(svg: string, full: boolean): string {
-	const config: Config = {
-		multipass: full,
-		plugins: [
-			{ name: 'prefixIds', params: { prefix: generatePrefix(svg) } },
-			...fastSVGOConfigPlugins,
-			...(full ? fullSVGOConfigPluginsAddOn : []),
-		],
-	};
 	try {
 		const { width, height } = extractDimensions(svg);
-		let optimizedSvg = optimize(svg, config).data;
+
+		let optimized = optimizeSvgSize(svg);
+
 		// Ensure dimensions are preserved
 		if (width && height) {
-			optimizedSvg = setSvgDimensions(optimizedSvg, width, height);
+			optimized = setSvgDimensions(
+				optimized,
+				width,
+				height,
+			);
 		}
-		return optimizedSvg;
+
+		return optimized;
 	} catch (e) {
 		console.warn('SVGO optimization failed:', e);
 		return svg;
@@ -80,4 +48,77 @@ function setSvgDimensions(
 
 		return `<svg width="${width}" height="${height}"${withoutDimensions}>`;
 	});
+}
+
+export function optimizeSvgSize(svg: string, precision = 3): string {
+	svg = svg
+		.replace(/<!DOCTYPE[\s\S]*?>/gi, '')
+		.replace(/<\?xml[\s\S]*?\?>/gi, '')
+		.replace(/<!--[\s\S]*?-->/g, '')
+		.replace(/<metadata\b[^>]*>[\s\S]*?<\/metadata>/gi, '')
+		.replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, '')
+		.replace(/<desc\b[^>]*>[\s\S]*?<\/desc>/gi, '')
+		.replace(/\s+[A-Za-z_:][-A-Za-z0-9_:.]*=(["'])\1/g, '')
+		.replace(/>\s+</g, '><');
+
+	svg = svg.replace(
+		/\b(d|points|transform|viewBox|x|y|x1|x2|y1|y2|width|height|rx|ry|cx|cy|r)="([^"]*)"/g,
+		(_match, name: string, value: string) => {
+			return `${name}="${optimizeNumericAttribute(
+				value,
+				precision,
+			)}"`;
+		},
+	);
+
+	return svg.trim();
+}
+
+function optimizeNumericAttribute(
+	value: string,
+	precision: number,
+): string {
+	value = value.replace(
+		/-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?/gi,
+		(raw) => optimizeNumber(raw, precision),
+	);
+
+	value = value
+		.replace(/\s+/g, ' ')
+		.replace(/\s*,\s*/g, ',')
+		.trim();
+
+	return value;
+}
+
+function optimizeNumber(raw: string, precision: number): string {
+	const n = Number(raw);
+
+	if (!Number.isFinite(n)) return raw;
+	if (n === 0) return '0';
+
+	const abs = Math.abs(n);
+
+	let decimalPlaces = precision;
+
+	// Preserve precision for very small values.
+	// .000012345 -> .0000123 rather than 0
+	if (abs < 1) {
+		const firstNonZeroPlace =
+			Math.floor(-Math.log10(abs));
+
+		decimalPlaces = firstNonZeroPlace + precision;
+	}
+
+	let result = n.toFixed(decimalPlaces);
+
+	if (result.includes('.')) {
+		result = result
+			.replace(/0+$/, '')
+			.replace(/\.$/, '');
+	}
+
+	result = result.replace(/^(-?)0\./, '$1.');
+
+	return result;
 }

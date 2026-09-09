@@ -1,8 +1,8 @@
 import LatexCompilerPlugin from 'src/main';
-import { optimizeSVG } from './optimizeSVG';
 import PdfToSvgWasm from '@pdf-to-svg-runtime';
 import { LatexRenderChild } from '../task/latexRenderChild';
 import { CompilePipeline } from 'src/settings/settings';
+import { optimizeSVG } from './optimizeSVG';
 
 export const LATEX_RENDER_ID_KEY = 'data-id';
 
@@ -46,17 +46,67 @@ export async function pdfToOptimizedSVG(
 ) {
     let svg = await pdfToSVG(pdfData);
 
+    svg = prefixSvgIds(svg, config.stem);
+
     if (config.autoRemoveWhitespace) {
         svg = await cropSvgByPixels(svg);
     }
 
-    svg = optimizeSVG(svg, false);
+    svg = optimizeSVG(svg);
 
     if (config.invertColorsInDarkMode) {
         svg = colorSVGinDarkMode(svg);
     }
 
     return setSvgDataId(svg, config.stem);
+}
+
+function prefixSvgIds(svgString: string, prefix: string): string {
+	const parser = new DOMParser();
+	const doc = parser.parseFromString(svgString, 'image/svg+xml');
+	const svg = doc.documentElement;
+
+	if (svg.tagName.toLowerCase() !== 'svg') {
+		return svgString;
+	}
+
+    const idMap = new Map<string, string>();
+
+    // Rename every ID.
+    for (const element of Array.from(svg.querySelectorAll('[id]'))) {
+        const oldId = element.getAttribute('id');
+        if (!oldId) continue;
+
+        const newId = `${prefix}__${oldId}`;
+        idMap.set(oldId, newId);
+        element.setAttribute('id', newId);
+    }
+
+    // Rewrite references to those IDs.
+    for (const element of Array.from(svg.querySelectorAll('*'))) {
+        for (const attribute of Array.from(element.attributes)) {
+            let value = attribute.value;
+
+            for (const [oldId, newId] of idMap) {
+                // href="#foo" / xlink:href="#foo"
+                if (value === `#${oldId}`) {
+                    value = `#${newId}`;
+                }
+
+                // clip-path="url(#foo)", fill="url(#foo)", etc.
+                value = value.replaceAll(
+                    `url(#${oldId})`,
+                    `url(#${newId})`,
+                );
+            }
+
+            if (value !== attribute.value) {
+                element.setAttribute(attribute.name, value);
+            }
+        }
+    }
+
+	return new XMLSerializer().serializeToString(svg);
 }
 
 function colorSVGinDarkMode(svg: string) {

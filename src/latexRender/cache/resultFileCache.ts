@@ -14,7 +14,6 @@ import {
 	ResultFileVirtualCache,
 } from './resultFileCacheTypes';
 import { extractStemAndExtension, resolveDependencyContent } from '../resolvers/paths';
-import { optimizeSVG } from '../pdfConversion/optimizeSVG';
 import { hashContent } from './compilerCache';
 import { getLatexCodeBlockDefinition } from '../codeBlockTypes';
 
@@ -46,32 +45,10 @@ export default class ResultFileCache {
 	private async onload() {
 		this.loadCache();
 		await this.cleanUpCache();
-		await this.finishProcessDirtyFiles();
 	}
 
 	isPhysicalCache(): boolean {
 		return (this.cache instanceof ResultFilePhysicalCache);
-	}
-
-	private async finishProcessDirtyFiles() {
-		const dirtyFiles = this.plugin.settings.dirtyResultFiles;
-		for (const fileName of dirtyFiles) {
-			if (!fileName.endsWith('.svg')) {
-				continue;
-			}
-			const content = await this.cache.getFileAsString(fileName);
-			if (content === undefined) {
-				continue;
-			}
-			try {
-				const cleanSvg = optimizeSVG(content, true);
-				await this.cache.addFile(fileName, cleanSvg);
-			} catch (err) {
-				console.warn(`Failed to process ${fileName}:`, err);
-			}
-		}
-		this.plugin.settings.dirtyResultFiles = [];
-		await this.plugin.saveSettings();
 	}
 
 	async changeCacheDirectory() {
@@ -184,13 +161,6 @@ export default class ResultFileCache {
 		const stem = this.getFileStem(rawHash, targetEntry);
 		const fileName = this.stemToFileName(stem, format);
 		await this.cache.addFile(fileName, content);
-
-		if (
-			format === 'svg' &&
-			!this.plugin.settings.dirtyResultFiles.includes(fileName)
-		) {
-			this.plugin.settings.dirtyResultFiles.push(fileName);
-		}
 
 		await this.saveCache();
 	}
@@ -516,7 +486,6 @@ export default class ResultFileCache {
 	async removeAllCached(): Promise<void> {
 		await this.cache.clearCache();
 		this.cacheMap.clear();
-		this.plugin.settings.dirtyResultFiles = [];
 		await this.saveCache();
 	}
 

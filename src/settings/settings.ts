@@ -67,8 +67,6 @@ export interface LatexCompilerPluginSettings {
 	invertColorsInDarkMode: boolean;
 	autoRemoveWhitespace: boolean;
 
-	dirtyResultFiles: string[];
-
 	package_url: string;
 	physicalCache: boolean;
 	physicalCacheLocation: string;
@@ -94,7 +92,6 @@ export const DEFAULT_SETTINGS: LatexCompilerPluginSettings = {
 	invertColorsInDarkMode: true,
 	//TODO: put in settings tab
 	autoRemoveWhitespace: true,
-	dirtyResultFiles: [],
 	//its the public mirror of `https://texlive2.swiftlatex.com/` (which is down and not maintained any more) maintained by Texlyre
 	package_url: 'https://texlive.texlyre.org/',
 	physicalCache: true,
