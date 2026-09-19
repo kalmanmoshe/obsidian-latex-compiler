@@ -1,6 +1,6 @@
 import { Notice, PluginSettingTab, Setting, setIcon } from 'obsidian';
 import LatexRenderPlugin from '../main';
-import { CompilerType, DEFAULT_SETTINGS, OverflowStrategy } from './settings';
+import { CompilerType, DEFAULT_SETTINGS, OverflowStrategy, shouldEnableCompilerByDefault } from './settings';
 import {
 	addDropdownSetting,
 	addToggleSetting,
@@ -201,9 +201,13 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 
 		addToggleSetting(
 			containerEl,
-			(value: boolean) => {
+			async (value: boolean) => {
 				this.plugin.settings.experimentalSmartPreprocessing = value;
-				this.display();
+				await this.plugin.saveSettings();
+				autoloadedFilesSetting.settingEl.toggleClass(
+					'hidden',
+					!this.plugin.settings.experimentalSmartPreprocessing,
+				);
 			},
 			{
 				name: 'Enable experimental smart preprocessing',
@@ -215,14 +219,10 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 			},
 		);
 
-		if (!this.plugin.settings.experimentalSmartPreprocessing) {
-			return;
-		}
-
-		addFileSearchSetting(
+		const autoloadedFilesSetting = addFileSearchSetting(
 			containerEl,
 			async (value: string) => {
-				this.plugin.settings.autoloadedVfsFilesDir = value;
+				this.plugin.settings.autoloadedVfsFilesDir = value
 				await this.plugin.saveSettings(true);
 			},
 			{
@@ -235,6 +235,37 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 					timeout: FILE_SEARCH_DEBOUNCE_MS,
 					resetTimer: true,
 				},
+			},
+		);
+
+		autoloadedFilesSetting.settingEl.toggleClass(
+			'hidden',
+			!this.plugin.settings.experimentalSmartPreprocessing,
+		);
+
+		const localSettings = this.plugin.getLocalStorageSettings();
+
+		const description = !shouldEnableCompilerByDefault()
+			? 'The compiler is disabled by default on this device because compilation may cause severe performance issues or instability. ' +
+			'Enable this only if you understand the risk. This setting affects this device only.'
+			: 'Controls whether the LaTeX compiler runs on this specific device. ' +
+			'Disable it on older or low-powered devices if compilation causes significant slowdowns. ' +
+			'This setting affects this device only.';
+
+		addToggleSetting(
+			containerEl,
+			async (value: boolean) => {
+				this.plugin.saveLocalStorageSetting(
+					'enableCompilerOnThisDevice',
+					value,
+				);
+				await this.plugin.latexRenderer.syncCompilerState();
+			},
+			{
+				name: 'Enable compiler on this device',
+				description:
+					description,
+				defValue: localSettings.enableCompilerOnThisDevice,
 			},
 		);
 	}

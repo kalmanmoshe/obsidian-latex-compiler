@@ -41,7 +41,7 @@ export function getDependencyHash(dependencies: string[]): string {
 }
 
 export function hashLatexContent(content: string) {
-	return hashString(content.replace(/\s/g, ''), 16);
+	return hashString(content, 16);
 }
 
 /**

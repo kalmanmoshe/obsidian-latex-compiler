@@ -32,6 +32,10 @@ export class LatexRenderCompilationSession implements LatexCompilationSession {
             'main.tex',
             sourcePath,
         );
+        this.virtualToSource.set(
+            'main.aux',
+            sourcePath,
+        )
     }
 
     async handleWorkerMessage(
@@ -93,7 +97,6 @@ export class LatexRenderCompilationSession implements LatexCompilationSession {
                 : undefined,
             format: Number(message.format)
         });
-
         if (!result) {
             worker.postMessage({
                 cmd: EngineCommands.Resolvefile,
@@ -132,7 +135,7 @@ export class LatexRenderCompilationSession implements LatexCompilationSession {
         }
 
         let vaultRequestingPath = this.virtualToSource.get(requestingPath);
-
+        
         if (!vaultRequestingPath) {
             return undefined;
         }

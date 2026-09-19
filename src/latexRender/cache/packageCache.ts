@@ -148,8 +148,8 @@ export default class PackageCache extends PhysicalCacheBase {
 	}
 
 	private compiler() {
-		if (!this.plugin.latexRenderer.isNotIos()) {
-			throw new Error('Package cache is not supported on iOS.');
+		if (!this.plugin.latexRenderer.isCompilerEnabled()) {
+			throw new Error('Package cache is not supported on this device because the compiler is disabled.');
 		}
 		return this.plugin.latexRenderer.compiler;
 	}

@@ -15,7 +15,10 @@
     "version": "node version-bump.mjs && git add manifest.json versions.json",
     "update-utils": "npm uninstall obsidian-dev-utils && npm install kalmanmoshe/obsidian-dev-utils#main",
     "generate:payloads": "powershell -ExecutionPolicy Bypass -File ./scripts/generate-compressed-payloads.ps1",
-    "build:swiftlatex": "powershell -ExecutionPolicy Bypass -File ./scripts/build-swiftlatex.ps1 && npm run generate:payloads",
+    "build:swiftlatex": "powershell -ExecutionPolicy Bypass -File ./scripts/build-swiftlatex.ps1 all && npm run generate:payloads",
+    "build:swiftlatex:pdftex": "powershell -ExecutionPolicy Bypass -File ./scripts/build-swiftlatex.ps1 pdftex && npm run generate:payloads",
+    "build:swiftlatex:xetex": "powershell -ExecutionPolicy Bypass -File ./scripts/build-swiftlatex.ps1 xetex && npm run generate:payloads",
+    "build:swiftlatex:dvi": "powershell -ExecutionPolicy Bypass -File ./scripts/build-swiftlatex.ps1 dvi && npm run generate:payloads",
     "build:all": "npm run build:swiftlatex && npm run build",
     "push:android": "powershell -ExecutionPolicy Bypass -File ./scripts/push-android.ps1"
   },

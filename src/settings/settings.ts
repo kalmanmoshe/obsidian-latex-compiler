@@ -1,3 +1,5 @@
+import { Platform } from "obsidian";
+
 export type StringMap = Record<string, string | number>;
 
 export enum CompilerType {
@@ -65,6 +67,7 @@ export interface LatexCompilerPluginSettings {
 	virtualFilesFromCodeBlocks: boolean;
 
 	invertColorsInDarkMode: boolean;
+	//TODO: add to settings tab
 	autoRemoveWhitespace: boolean;
 
 	package_url: string;
@@ -105,5 +108,19 @@ export const DEFAULT_SETTINGS: LatexCompilerPluginSettings = {
 
 	autoloadedVfsFilesDir: '',
 };
+
+export const LOCAL_STORAGE_KEY = 'latex-compiler-local-settings';
+
+export interface LocalStorageSettings {
+    enableCompilerOnThisDevice: boolean;
+}
+
+export const DEFAULT_LOCAL_STORAGE_SETTINGS: LocalStorageSettings = {
+	enableCompilerOnThisDevice: shouldEnableCompilerByDefault(),
+};
+
+export function shouldEnableCompilerByDefault(): boolean {
+	return !(Platform.isIosApp && Platform.isMobile);
+}
 
 export const SOURCE_REVERIFICATION_TIME_MS = 1000;

@@ -175,7 +175,7 @@ export class LatexContextMenuPopulater {
 
 	private addCommonItems(): void {
 		this.addItem('remove & re-render', 'trash', async () => await this.removeAndReRender(), {
-			hiddenOnIos: true,
+			requiresCompiler: true,
 		});
 
 		this.addItem(
@@ -184,7 +184,7 @@ export class LatexContextMenuPopulater {
 			async () => {
 				void this.showLogs();
 			},
-			{ hiddenOnIos: true },
+			{ requiresCompiler: true },
 		);
 
 		this.addItem(
@@ -254,12 +254,12 @@ export class LatexContextMenuPopulater {
 		options?: {
 			hiddenOnError?: boolean;
 			hiddenOnMobile?: boolean;
-			hiddenOnIos?: boolean
+			requiresCompiler?: boolean
 		},
 	) {
 		if (options?.hiddenOnError && this.isError) return;
 		if (options?.hiddenOnMobile && Platform.isMobile) return;
-		if (options?.hiddenOnIos && !this.plugin.latexRenderer.isNotIos()) return;
+		if (options?.requiresCompiler && !this.plugin.latexRenderer.isCompilerEnabled()) return;
 
 		this.menu.addItem((item) => {
 			item.setTitle(title);

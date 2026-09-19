@@ -51,8 +51,8 @@ function evaluateCommonJsModule(source: string): PdfToSvgFactory {
 	// TODO: maby compress only the wasm binary and load the wrapper from a separate file instead of compressing the entire wrapper.
 	// eslint-disable-next-line @typescript-eslint/no-implied-eval
 	const execute = new Function(
-		'module',
 		'exports',
+		'module',
 		'require',
 		`${source}\nreturn module.exports;`,
 	) as (

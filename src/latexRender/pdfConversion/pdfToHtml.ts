@@ -46,8 +46,6 @@ export async function insertPdf(
 	pdfObject.setAttribute(LATEX_RENDER_ID_KEY, stem);
 
 	const openMenu = (event: MouseEvent) => {
-		console.log('Opening PDF menu', event.type);
-
 		event.preventDefault();
 		event.stopPropagation();
 		plugin.menuDecider.openMenu(event, renderChild, sourcePath, compilePipeline);

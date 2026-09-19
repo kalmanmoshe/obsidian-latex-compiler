@@ -1,3 +1,8 @@
+param(
+    [ValidateSet("all", "pdftex", "xetex", "dvi")]
+    [string] $Target = "all"
+)
+
 $ErrorActionPreference = "Stop"
 
 $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -80,37 +85,88 @@ $dvipdfmDest = Join-Path $compilerRoot `
 $swiftLatexBashPath = Convert-ToGitBashPath $SwiftLatexRoot
 $emsdkBashPath = Convert-ToGitBashPath $EmsdkRoot
 
+$makeCommand = switch ($Target) {
+    "all" {
+        "make re"
+    }
+
+    "pdftex" {
+        "make -C pdftex.wasm re --no-print-directory"
+    }
+
+    "xetex" {
+        "make -C xetex.wasm re --no-print-directory"
+    }
+
+    "dvi" {
+        "make -C dvipdfm.wasm re --no-print-directory"
+    }
+}
+
 Write-Host "Building SwiftLaTeX..."
 Write-Host "Source: $SwiftLatexRoot"
+Write-Host "Target: $Target"
 
 & $GitBashPath -lc @"
 set -e
 cd '$swiftLatexBashPath'
 source '$emsdkBashPath/emsdk_env.sh'
-make re
+$makeCommand
 "@
 
 if ($LASTEXITCODE -ne 0) {
     throw "SwiftLaTeX build failed with exit code $LASTEXITCODE."
 }
 
-Assert-PathExists $pdftexSource "Generated PDFTeX worker"
-Assert-PathExists $xetexSource "Generated XeTeX worker"
-Assert-PathExists $dvipdfmSource "Generated DVIPDFM worker"
+$workers = @{
+    pdftex = @{
+        Source = $pdftexSource
+        Destination = $pdftexDest
+        Description = "Generated PDFTeX worker"
+    }
+
+    xetex = @{
+        Source = $xetexSource
+        Destination = $xetexDest
+        Description = "Generated XeTeX worker"
+    }
+
+    dvi = @{
+        Source = $dvipdfmSource
+        Destination = $dvipdfmDest
+        Description = "Generated DVIPDFM worker"
+    }
+}
+
+$selectedWorkers = if ($Target -eq "all") {
+    @("pdftex", "xetex", "dvi")
+}
+else {
+    @($Target)
+}
 
 Write-Host "Copying workers..."
 
-foreach ($destination in @($pdftexDest, $xetexDest, $dvipdfmDest)) {
+foreach ($workerName in $selectedWorkers) {
+    $worker = $workers[$workerName]
+
+    Assert-PathExists `
+        $worker.Source `
+        $worker.Description
+
     New-Item `
         -ItemType Directory `
         -Force `
-        -Path (Split-Path -Parent $destination) |
+        -Path (Split-Path -Parent $worker.Destination) |
         Out-Null
+
+    Copy-Item `
+        $worker.Source `
+        $worker.Destination `
+        -Force
+
+    Write-Host "  Copied $workerName"
 }
 
-Copy-Item $pdftexSource $pdftexDest -Force
-Copy-Item $xetexSource $xetexDest -Force
-Copy-Item $dvipdfmSource $dvipdfmDest -Force
-
 Write-Host ""
-Write-Host "SwiftLaTeX workers built and copied successfully."
+Write-Host "SwiftLaTeX target '$Target' built and copied successfully."

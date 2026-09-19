@@ -1,5 +1,5 @@
 import { Plugin, Notice } from 'obsidian';
-import { LatexCompilerPluginSettings, DEFAULT_SETTINGS } from './settings/settings';
+import { LatexCompilerPluginSettings, DEFAULT_SETTINGS, DEFAULT_LOCAL_STORAGE_SETTINGS, LocalStorageSettings, LOCAL_STORAGE_KEY } from './settings/settings';
 import { LatexCompilerSettingTab } from './settings/settingsTab';
 import { getEditorCommands } from './obsidian/editorCommands';
 import { LatexRenderer } from './latexRender/latexRenderer';
@@ -31,7 +31,6 @@ export default class LatexCompilerPlugin extends Plugin {
 
 		await this.loadSettings();
 
-		this.addEditorCommands();
 		this.addSyntaxHighlighting();
 		this.app.workspace.onLayoutReady(async () => {
 			const onStart = performance.now();
@@ -62,6 +61,8 @@ export default class LatexCompilerPlugin extends Plugin {
 			new Notice('Error setting code blocks. Please check the console for more details.');
 		}
 		this.watchFiles();
+		//some commands are only available when the compiler is enabled, so we need to check that before adding them
+		this.addEditorCommands();
 	}
 
 	private setCodeblocks() {
@@ -140,6 +141,34 @@ export default class LatexCompilerPlugin extends Plugin {
 		}
 	}
 
+	getLocalStorageSettings(): LocalStorageSettings {
+		const stored = this.app.loadLocalStorage(
+			LOCAL_STORAGE_KEY,
+		) as Partial<LocalStorageSettings> | null;
+
+		return {
+			...DEFAULT_LOCAL_STORAGE_SETTINGS,
+			...(stored ?? {}),
+		};
+	}
+
+	saveLocalStorageSetting<
+		K extends keyof LocalStorageSettings,
+	>(
+		key: K,
+		value: LocalStorageSettings[K],
+	): void {
+		const current =
+			(this.app.loadLocalStorage(
+				LOCAL_STORAGE_KEY,
+			) as Partial<LocalStorageSettings> | null) ?? {};
+
+		this.app.saveLocalStorage(LOCAL_STORAGE_KEY, {
+			...current,
+			[key]: value,
+		});
+	}
+
 	private watchFiles() {
 		this.registerEvent(this.app.vault.on("rename", () => this.latexRenderer.preprocessor.refresh(false, true)));
 		this.registerEvent(this.app.vault.on("delete", (file) => onFileDelete(this, file)));
@@ -147,6 +176,6 @@ export default class LatexCompilerPlugin extends Plugin {
 	}
 
 	getDefaultCacheDir(): string {
-		return `${this.app.vault.configDir}/plugins/${this.manifest.id}/cache`;
+		return `${this.app.vault.configDir}/latex-compiler-cache`;
 	}
 }

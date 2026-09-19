@@ -1,10 +1,11 @@
 import { Command, Notice } from 'obsidian';
 import LatexCompilerPlugin from 'src/main';
-import { getTestCommands } from 'src/tests/commands';
+import { getTestCommands } from 'src/tests/compileTest';
 import { extractAllSectionsByFile } from 'src/latexRender/resolvers/latexSourceFromFile';
 import { hashLatexContent } from 'src/latexRender/cache/compilerCache';
 import { LatexTask } from 'src/latexRender/task/latexTask';
 import { codeBlockToContent } from 'obsidian-dev-utils';
+import { createBenchmarkCurrentFileCommand } from 'src/tests/benchmarkCurrentFileTest';
 
 function removeAllCachedPackages(plugin: LatexCompilerPlugin): Command {
 	return {
@@ -40,8 +41,8 @@ async function extractAllUnrenderedSectionsByFile(plugin: LatexCompilerPlugin) {
 }
 
 async function renderAllUnrenderedCodeBlocks(plugin: LatexCompilerPlugin) {
-	if (!plugin.latexRenderer.isNotIos()) {
-		throw new Error('Render all unrendered code blocks is not supported on iOS');
+	if (!plugin.latexRenderer.isCompilerEnabled()) {
+		throw new Error('Render all unrendered code blocks is not supported on this device because the compiler is disabled');
 	}
 	const sectionInfosByFile = await extractAllUnrenderedSectionsByFile(plugin);
 	let count = 0;
@@ -52,11 +53,11 @@ async function renderAllUnrenderedCodeBlocks(plugin: LatexCompilerPlugin) {
 			count++;
 		}
 	}
-	new Notice(`${count} code blocks in ${sectionInfosByFile.length} are being processed`);
+	new Notice(`${count} code blocks in ${sectionInfosByFile.length} files are being processed`);
 }
 
 function getRenderAllUnrenderedCodeBlocks(plugin: LatexCompilerPlugin) {
-	if (!plugin.latexRenderer.isNotIos()) return undefined;
+	if (!plugin.latexRenderer.isCompilerEnabled()) return undefined;
 
 	return {
 		id: 'render-all-unrendered-code-blocks',
@@ -69,7 +70,7 @@ function getRenderAllUnrenderedCodeBlocks(plugin: LatexCompilerPlugin) {
 }
 
 function getRebuildQueue(plugin: LatexCompilerPlugin) {
-	if (!plugin.latexRenderer.isNotIos()) return undefined;
+	if (!plugin.latexRenderer.isCompilerEnabled()) return undefined;
 
 	return {
 		id: 'rebuild-queue',
@@ -82,7 +83,7 @@ function getRebuildQueue(plugin: LatexCompilerPlugin) {
 }
 
 function getAbortTasks(plugin: LatexCompilerPlugin) {
-	if (!plugin.latexRenderer.isNotIos()) return undefined;
+	if (!plugin.latexRenderer.isCompilerEnabled()) return undefined;
 
 	return {
 		id: 'abort-latex-tasks',
@@ -95,7 +96,7 @@ function getAbortTasks(plugin: LatexCompilerPlugin) {
 }
 
 function getClearTemporaryCache(plugin: LatexCompilerPlugin) {
-	if (!plugin.latexRenderer.isNotIos()) return undefined;
+	if (!plugin.latexRenderer.isCompilerEnabled()) return undefined;
 
 	return {
 		id: 'clear-temporary-cache',
@@ -119,11 +120,16 @@ function getRestartCompilerCommand(plugin: LatexCompilerPlugin) {
 }
 
 export const getEditorCommands = (plugin: LatexCompilerPlugin): (Command | undefined)[] => {
-	let testCommands: Command[];
+	let testCommands: (Command | undefined)[];
 	if (__PRODUCTION__) {
 		testCommands = [];
 	} else {
-		testCommands = getTestCommands(plugin);
+		testCommands = [
+			...getTestCommands(plugin),
+			createBenchmarkCurrentFileCommand(plugin),
+			getRenderAllUnrenderedCodeBlocks(plugin),
+
+		];
 	}
 	return [
 		...testCommands,
@@ -131,7 +137,6 @@ export const getEditorCommands = (plugin: LatexCompilerPlugin): (Command | undef
 		getRebuildQueue(plugin),
 		getAbortTasks(plugin),
 		getClearTemporaryCache(plugin),
-		getRenderAllUnrenderedCodeBlocks(plugin),
 		getRestartCompilerCommand(plugin),
 	];
 };

@@ -1,4 +1,4 @@
-import { MarkdownPostProcessorContext, Platform } from 'obsidian';
+import { MarkdownPostProcessorContext } from 'obsidian';
 import { CompileResult, CompileStatus } from './compiler/base/compilerBase/engine';
 import LatexCompilerPlugin from '../main';
 import { CompilePipeline, CompilerType, ResultFileFormat } from 'src/settings/settings.js';
@@ -40,11 +40,9 @@ export class LatexRenderer {
 	async onload(plugin: LatexCompilerPlugin) {
 		this.plugin = plugin;
 		this.cache = new CompilerCache(this.plugin);
-		if (this.isNotIos()) {
-			await this.loadCompiler();
 
-			this.queue = new LatexRenderQueue((t) => this.processAndRenderLatexTask(t));
-		}
+		await this.syncCompilerState();
+
 		this.ensurePreprocessor();
 	}
 
@@ -63,6 +61,25 @@ export class LatexRenderer {
 		this.preprocessor = shouldBeSmart
 			? new SmartLatexPreprocessor(this.plugin, new VirtualFileSystem(), this.plugin.app)
 			: new BasicLatexPreprocessor();
+	}
+
+	async syncCompilerState(): Promise<void> {
+		const shouldBeEnabled =
+			this.plugin.getLocalStorageSettings().enableCompilerOnThisDevice;
+
+		const isEnabled =
+			this.compiler !== undefined &&
+			this.queue !== undefined;
+
+		if (shouldBeEnabled === isEnabled) {
+			return;
+		}
+
+		if (shouldBeEnabled) {
+			await this.startCompiler();
+		} else {
+			this.stopCompiler();
+		}
 	}
 
 	switchCompiler(): Promise<void> {
@@ -97,9 +114,26 @@ export class LatexRenderer {
 	}
 
 	async restartCompiler() {
-		this.compiler?.closeWorkers();
-		this.queue?.abortAllWaiting();
+		this.stopCompiler();
+		await this.startCompiler();
+	}
+
+	private async startCompiler(): Promise<void> {
+		if (this.compiler || this.queue) return;
+
 		await this.loadCompiler();
+
+		this.queue = new LatexRenderQueue(
+			(t) => this.processAndRenderLatexTask(t),
+		);
+	}
+
+	private stopCompiler(): void {
+		this.queue?.abortAllWaiting();
+		this.queue = undefined;
+
+		this.compiler?.closeWorkers();
+		this.compiler = undefined;
 	}
 
 	// i have to also cache the files refrenced my the hash and thar loction becose thar can i a file that is Referencing the same files.But because it's in a different directory, those files in actuality are different, leading to a different render.
@@ -207,7 +241,7 @@ export class LatexRenderer {
 	}
 
 	private hasNewerQueuedTask(task: LatexTask): boolean {
-		if (!this.isNotIos()) return false;
+		if (!this.isCompilerEnabled()) return false;
 
 		return this.queue
 			.getWaitingTasks()
@@ -342,7 +376,6 @@ export class LatexRenderer {
 				format
 			);
 		} catch (err: unknown) {
-			console.error('Error rendering LaTeX to element:', err);
 			this.displayErrorForTask(task, err);
 		} finally {
 			if (!this.compiler?.isResponsive()) {
@@ -359,7 +392,7 @@ export class LatexRenderer {
 		config: { fetchPkgData?: boolean; cacheId?: string } = {},
 	): Promise<{ result: CompileResult; compilationSession: LatexRenderCompilationSession }> {
 		await this.compiler!.waitUntilReady();
-
+		const time = performance.now();
 		await this.compiler!.flushWorkCache();
 		await this.compiler!.writeMemFSFile('main.tex', source);
 		await this.compiler!.setEngineMainFile(0, 'main.tex');
@@ -367,7 +400,7 @@ export class LatexRenderer {
 		const compilationSession = new LatexRenderCompilationSession(this, sourcePath);
 		const result = await this.compiler!.compileLaTeX(compilationSession);
 
-		console.log('Compilation result:', result, compilationSession);
+		console.log('Compilation result:', result, "at", performance.now() - time, "ms");
 
 		if (config.cacheId) {
 			this.cache.addLog(config.cacheId, result.log, compilationSession);
@@ -446,10 +479,12 @@ export class LatexRenderer {
 		return true;
 	}
 
-	isNotIos(): this is LatexRenderer & {
+	isCompilerEnabled(): this is LatexRenderer & {
 		queue: LatexRenderQueue;
 		compiler: LatexCompiler;
 	} {
-		return !Platform.isIosApp;
+		return (
+			this.plugin.getLocalStorageSettings().enableCompilerOnThisDevice
+		);
 	}
 }
