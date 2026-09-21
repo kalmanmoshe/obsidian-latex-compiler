@@ -1,4 +1,5 @@
 meta.json
+cache
 src/generated
 
 # Machine-specific development settings

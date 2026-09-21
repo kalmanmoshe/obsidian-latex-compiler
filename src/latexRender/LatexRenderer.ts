@@ -109,7 +109,7 @@ export class LatexRenderer {
 		}
 
 		await this.compiler.loadEngines();
-		await this.cache.loadPackageCache();
+		await this.cache.loadTexLiveCache();
 		await this.compiler.setTexliveEndpoint(this.plugin.settings.package_url);
 	}
 
@@ -146,7 +146,7 @@ export class LatexRenderer {
 		el.classList.add(
 			'latex-compiler-render',
 		);
-		
+
 		if (definition.resultFormat === 'svg') {
 			el.classList.add(`latex-compiler-overflow-${this.plugin.settings.overflowStrategy}`);
 		}
@@ -408,7 +408,7 @@ export class LatexRenderer {
 		}
 
 		if (config.fetchPkgData) {
-			await this.cache.fetchPackageCacheData();
+			await this.cache.fetchTexLiveCacheData();
 		}
 
 		if (!result.isStatus(CompileStatus.Success)) {

@@ -3,7 +3,7 @@ import { Md5 } from 'ts-md5';
 import LatexCompilerPlugin from 'src/main';
 import ResultFileCache from './resultFileCache';
 import { ProcessedLog } from '../logs/latexLogParser';
-import PackageCache from './packageCache';
+import TexLiveCache from './texLiveCache';
 import LogCache from './logCache';
 import { LatexRenderCompilationSession } from '../latexRenderCompilationSession';
 
@@ -52,8 +52,8 @@ export default class CompilerCache {
 	private plugin: LatexCompilerPlugin;
 	/** Handles caching of compiled files. */
 	resultFileCache: ResultFileCache;
-	/** Handles caching of LaTeX packages. */
-	private packageCache: PackageCache;
+	/** Handles caching of TeX Live packages. */
+	private texLiveCache: TexLiveCache;
 	/** Handles caching of compilation logs. */
 	private logCache: LogCache;
 
@@ -64,15 +64,15 @@ export default class CompilerCache {
 	constructor(plugin: LatexCompilerPlugin) {
 		this.plugin = plugin;
 		this.resultFileCache = new ResultFileCache(this.plugin);
-		this.packageCache = new PackageCache(this.plugin);
+		this.texLiveCache = new TexLiveCache(this.plugin);
 		this.logCache = new LogCache(this.plugin);
 	}
 
 	/**
 	 * Fetches cached package data.
 	 */
-	fetchPackageCacheData() {
-		return this.packageCache.fetchPackageCacheData();
+	fetchTexLiveCacheData() {
+		return this.texLiveCache.fetchTexLiveCacheData();
 	}
 
 	/**
@@ -111,15 +111,15 @@ export default class CompilerCache {
 	/**
 	 * Loads the package cache from disk.
 	 */
-	loadPackageCache() {
-		return this.packageCache.loadPackageCache();
+	loadTexLiveCache() {
+		return this.texLiveCache.loadTexLiveCache();
 	}
 
 	/**
 	 * Removes all cached packages.
 	 */
 	async removeAllCachedPackages() {
-		return this.packageCache.removeAllCachedPackages();
+		return this.texLiveCache.removeAllCachedPackages();
 	}
 
 	/**

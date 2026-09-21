@@ -12,7 +12,7 @@ export enum CompilePipeline {
 	Process = 'process',
 }
 
-export type OverflowStrategy = 'downscale'  | 'scroll' | 'hidden';
+export type OverflowStrategy = 'downscale' | 'scroll' | 'hidden';
 export type ResultFileFormat = 'svg' | 'pdf';
 
 /**
@@ -46,7 +46,7 @@ export type CacheMap = Map<string, CacheEntry[]>;
  */
 export type CacheJson = Record<string, CacheEntry[]>;
 
-export interface PackageCacheData {
+export interface TexLiveCacheData {
 	missingPackages: StringMap;
 	cachedPackages: StringMap;
 	missingFonts: StringMap;
@@ -62,7 +62,7 @@ export interface LatexCompilerPluginSettings {
 	physicalCache: boolean;
 	physicalCacheLocation: string;
 	cache: CacheJson;
-	packageCache: Array<StringMap>;
+	texLiveCache: Array<StringMap>;
 	overflowStrategy: OverflowStrategy;
 	compiler: CompilerType;
 
@@ -86,10 +86,10 @@ export const DEFAULT_SETTINGS: LatexCompilerPluginSettings = {
 	physicalCache: true,
 	physicalCacheLocation: '',
 	cache: {},
-	packageCache: [{}, {}, {}, {}],
+	texLiveCache: [{}, {}, {}, {}],
 	overflowStrategy: "scroll",
 	compiler: CompilerType.PdfTeX,
-	
+
 	experimentalSmartPreprocessing: false,
 
 	autoloadedVfsFilesDir: '',
@@ -98,7 +98,7 @@ export const DEFAULT_SETTINGS: LatexCompilerPluginSettings = {
 export const LOCAL_STORAGE_KEY = 'latex-compiler-local-settings';
 
 export interface LocalStorageSettings {
-    enableCompilerOnThisDevice: boolean;
+	enableCompilerOnThisDevice: boolean;
 }
 
 export const DEFAULT_LOCAL_STORAGE_SETTINGS: LocalStorageSettings = {
