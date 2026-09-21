@@ -15,11 +15,10 @@ export class ResultFilePhysicalCache extends PhysicalCacheBase {
 		if (cacheDir) {
 			folderPath = cacheDir === '/' ? '' : cacheDir
 		} else {
-			folderPath = this.plugin.getDefaultCacheDir();
+			folderPath = this.plugin.getCacheDir();
 		}
 
-		folderPath = joinPaths(folderPath, 'pdf-cache');
-		this.cacheFolderPath = folderPath;
+		this.cacheFolderPath = joinPaths(folderPath, 'result-cache');
 	}
 
 	/**

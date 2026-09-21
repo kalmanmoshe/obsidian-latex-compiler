@@ -2,7 +2,7 @@ import { MarkdownPostProcessorContext } from 'obsidian';
 import { CompileResult, CompileStatus } from './compiler/base/compilerBase/engine';
 import LatexCompilerPlugin from '../main';
 import { CompilePipeline, CompilerType, ResultFileFormat } from 'src/settings/settings.js';
-import { insertPdf } from './pdfConversion/pdfToHtml';
+import { insertPdf, insertPdfForExport } from './pdfConversion/pdfToHtml';
 import parseLatexLog, { refactorLogToErrorMessage } from './logs/humanReadableLogs';
 import { VirtualFileSystem } from '../latexPreprocessor/virtualFileSystem';
 import { ProcessedLog } from './logs/latexLogParser';
@@ -145,8 +145,11 @@ export class LatexRenderer {
 	) {
 		el.classList.add(
 			'latex-compiler-render',
-			`latex-compiler-overflow-${this.plugin.settings.overflowStrategy}`,
 		);
+		
+		if (definition.resultFormat === 'svg') {
+			el.classList.add(`latex-compiler-overflow-${this.plugin.settings.overflowStrategy}`);
+		}
 
 		const rawHash = hashLatexContent(source);
 		const createResult = await LatexTask.createAsync(this.plugin, definition, source, el, ctx);
@@ -166,14 +169,12 @@ export class LatexRenderer {
 
 		const task = createResult.result as LatexTask;
 
-		try {
-			// PDF file has already been cached
-			// Could have a case where pdfCache has the key but the cached file has been deleted
-			const wasRestoredFromCache = await this.restoreFromCache(task);
-			if (wasRestoredFromCache) return;
-		} catch (err) {
-			console.error('Error restoring from cache:', err, task.getDebugInfo());
-		}
+		// PDF file has already been cached
+		// Could have a case where pdfCache has the key but the cached file has been deleted
+		const wasRestoredFromCache = await this.restoreFromCache(task);
+		if (wasRestoredFromCache) return;
+
+		if (isPdfExportRender(el)) return;
 
 		this.queue?.push(task);
 	}
@@ -422,7 +423,6 @@ export class LatexRenderer {
 
 		const config = {
 			invertColorsInDarkMode: this.plugin.settings.invertColorsInDarkMode,
-			autoRemoveWhitespace: this.plugin.settings.autoRemoveWhitespace,
 			stem,
 		};
 
@@ -430,15 +430,19 @@ export class LatexRenderer {
 	}
 
 	private async restoreFromCache(task: LatexTask) {
-		const result = await this.cache.resultFileCache.getResultFile(
-			task.rawHash,
-			task.sourcePath,
-			task.compilePipeline,
-			task.resultFormat
-		);
-		if (result === undefined) return false;
-
-		return this.renderResultFile(task, result.data);
+		try {
+			const result = await this.cache.resultFileCache.getResultFile(
+				task.rawHash,
+				task.sourcePath,
+				task.compilePipeline,
+				task.resultFormat
+			);
+			if (result === undefined) return false;
+			return this.renderResultFile(task, result.data);
+		} catch (err) {
+			console.error('Error restoring from cache:', err, task.getDebugInfo());
+			return false;
+		}
 	}
 
 	private async renderResultFile(
@@ -467,14 +471,18 @@ export class LatexRenderer {
 			return false;
 		}
 
-		await insertPdf(
-			data,
-			renderChild,
-			stem,
-			task.sourcePath,
-			task.compilePipeline,
-			this.plugin,
-		);
+		if (isPdfExportRender(renderChild.containerEl)) {
+			await insertPdfForExport(data, renderChild, stem);
+		} else {
+			await insertPdf(
+				data,
+				renderChild,
+				stem,
+				task.sourcePath,
+				task.compilePipeline,
+				this.plugin,
+			);
+		}
 
 		return true;
 	}
@@ -487,4 +495,13 @@ export class LatexRenderer {
 			this.plugin.getLocalStorageSettings().enableCompilerOnThisDevice
 		);
 	}
+}
+
+function isPdfExportRender(el: HTMLElement): boolean {
+	const doc = el.ownerDocument;
+
+	return (
+		doc.location.href === 'about:blank' &&
+		doc.body.querySelector(':scope > .print') !== null
+	);
 }

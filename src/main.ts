@@ -23,6 +23,7 @@ export default class LatexCompilerPlugin extends Plugin {
 	settings: LatexCompilerPluginSettings;
 	latexRenderer: LatexRenderer = new LatexRenderer();
 	menuDecider: LatexContextMenuDecider;
+	private cacheDir: string;
 
 	async onload() {
 		const startTime = performance.now();
@@ -49,6 +50,7 @@ export default class LatexCompilerPlugin extends Plugin {
 	}
 
 	private async loadLayoutReadyDependencies() {
+		await this.setCacheDir();
 		// we need to use await here because the codeBlock processor
 		// needs to be loaded before the codeBlocks are processed
 		await this.latexRenderer.onload(this);
@@ -175,7 +177,58 @@ export default class LatexCompilerPlugin extends Plugin {
 		this.registerEvent(this.app.vault.on("create", (file) => onFileCreate(this, file)));
 	}
 
-	getDefaultCacheDir(): string {
-		return `${this.app.vault.configDir}/latex-compiler-cache`;
+	getCacheDir(): string { return this.cacheDir; }
+	//must be in the plugin dir as if not the cache will not be deleted when the plugin is uninstalled
+	private async setCacheDir(): Promise<void> {
+		const pluginDir = await this.resolvePluginDir();
+
+		if (!pluginDir) {
+			throw new Error(
+				'Could not resolve plugin directory. Cache directory cannot be set.',
+			);
+		}
+
+		this.cacheDir = `${pluginDir}/cache`;
+	}
+
+	async resolvePluginDir(): Promise<string | undefined> {
+		if (this.manifest.dir) {
+			return this.manifest.dir;
+		}
+
+		const expected = `${this.app.vault.configDir}/plugins/${this.manifest.id}`;
+
+		if (await this.isOurPluginDir(expected)) {
+			return expected;
+		}
+
+		return await this.findPluginDir();
+	}
+
+	private async isOurPluginDir(dir: string): Promise<boolean> {
+		try {
+			const raw = await this.app.vault.adapter.read(
+				`${dir}/manifest.json`,
+			);
+
+			const manifest = JSON.parse(raw);
+
+			return manifest.id === this.manifest.id;
+		} catch {
+			return false;
+		}
+	}
+
+	private async findPluginDir(): Promise<string | undefined> {
+		const pluginsDir = `${this.app.vault.configDir}/plugins`;
+		const { folders } = await this.app.vault.adapter.list(pluginsDir);
+
+		for (const folder of folders) {
+			if (await this.isOurPluginDir(folder)) {
+				return folder;
+			}
+		}
+
+		return undefined;
 	}
 }

@@ -12,17 +12,7 @@ export enum CompilePipeline {
 	Process = 'process',
 }
 
-/**
- * What to do when the content overflows the container.
- * "Downscale" - downscale the content.
- * "scroll" - add a scrollbar.
- * "hidden" - do nothing, content will overflow.
- */
-export enum OverflowStrategy {
-	Downscale = 'downscale',
-	Scroll = 'scroll',
-	Hidden = 'hidden',
-}
+export type OverflowStrategy = 'downscale'  | 'scroll' | 'hidden';
 export type ResultFileFormat = 'svg' | 'pdf';
 
 /**
@@ -67,8 +57,6 @@ export interface LatexCompilerPluginSettings {
 	virtualFilesFromCodeBlocks: boolean;
 
 	invertColorsInDarkMode: boolean;
-	//TODO: add to settings tab
-	autoRemoveWhitespace: boolean;
 
 	package_url: string;
 	physicalCache: boolean;
@@ -93,15 +81,13 @@ export const DEFAULT_SETTINGS: LatexCompilerPluginSettings = {
 	virtualFilesFromCodeBlocks: false,
 	// style settings
 	invertColorsInDarkMode: true,
-	//TODO: put in settings tab
-	autoRemoveWhitespace: true,
 	//its the public mirror of `https://texlive2.swiftlatex.com/` (which is down and not maintained any more) maintained by Texlyre
 	package_url: 'https://texlive.texlyre.org/',
 	physicalCache: true,
 	physicalCacheLocation: '',
 	cache: {},
 	packageCache: [{}, {}, {}, {}],
-	overflowStrategy: OverflowStrategy.Downscale,
+	overflowStrategy: "scroll",
 	compiler: CompilerType.PdfTeX,
 	
 	experimentalSmartPreprocessing: false,

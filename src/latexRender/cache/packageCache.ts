@@ -12,10 +12,7 @@ export default class PackageCache extends PhysicalCacheBase {
 	}
 
 	setCacheFolderPath(): void {
-		this.cacheFolderPath = joinPaths(
-			this.plugin.getDefaultCacheDir(),
-			'package-cache',
-		);
+		this.cacheFolderPath = joinPaths(this.plugin.getCacheDir(), 'package-cache');
 	}
 
 	async loadPackageCache() {

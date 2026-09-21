@@ -84,13 +84,21 @@
 .latex-compiler-render.latex-compiler-overflow-hidden {
 	display: flex;
 	justify-content: center;
-	align-items: center;
-	width: fit-content;
+	align-items: flex-start;
+
+	width: 100%;
 	overflow: hidden;
 }
 
 .latex-compiler-render.latex-compiler-overflow-hidden svg {
 	display: block;
+
+	width: auto;
+	height: auto;
+
+	max-width: none;
+	max-height: none;
+	flex-shrink: 0;
 }
 
 .latex-pdf-wrapper {
@@ -160,6 +168,15 @@
 	width: 100%;
 	border: 0;
 }
+
+/* pdf print */
+.latex-pdf-export {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+/* Error message styles */
 
 .block-latex-error {
 	/* filter: invert(100%); */

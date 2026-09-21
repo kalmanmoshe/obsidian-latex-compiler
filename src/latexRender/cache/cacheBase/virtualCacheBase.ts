@@ -45,10 +45,6 @@ export abstract class VirtualCacheBase extends CacheBase {
 	}
 
 	async addFile(fileName: string, content: CacheContent) {
-		content =
-			typeof content === 'string'
-				? content
-				: new TextDecoder().decode(content);
 		this.cache.set(fileName, content);
 	}
 

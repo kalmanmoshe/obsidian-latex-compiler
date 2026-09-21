@@ -61,13 +61,12 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 				void this.plugin.saveSettings();
 			},
 			{
-				name: 'Overflow strategy',
-				description:
-					"What to do when the content overflows the container. 'downscale' - downscale the content, 'scroll' - add a scrollbar, 'hidden' - do nothing, content will overflow.",
+				name: 'SVG render sizing',
+				description: 'Choose how SVG renders behave when they are wider than the note.',
 				dropDownOptions: {
-					downscale: 'Downscale',
-					scroll: 'Scroll',
-					hidden: 'Hidden',
+					downscale: 'Fit to width',
+					scroll: 'Keep size and scroll',
+					hidden: 'Keep size and clip',
 				},
 				defValue: this.plugin.settings.overflowStrategy,
 			},
