@@ -4,8 +4,8 @@ import { getLatexHashesFromFile } from '../resolvers/latexSourceFromFile';
 import { CacheBase, CacheContent } from './cacheBase/cacheBase';
 import {
 	CacheEntry,
-	CacheJson,
-	CacheMap,
+	ResultCacheIndexJson,
+	ResultCacheIndex,
 	CompilePipeline,
 	ResultFileFormat,
 } from 'src/settings/settings';
@@ -27,7 +27,7 @@ export default class ResultFileCache {
 	/**
 	 * Raw source hash -> cached dependency/format variants.
 	 */
-	private cacheMap: CacheMap;
+	private cacheMap: ResultCacheIndex;
 	private cache: CacheBase;
 
 	constructor(plugin: LatexCompilerPlugin) {
@@ -108,12 +108,12 @@ export default class ResultFileCache {
 	}
 
 	private loadCache() {
-		const raw: CacheJson = this.plugin.settings.cache || {};
+		const raw: ResultCacheIndexJson = this.plugin.settings.resultCacheIndex || {};
 		this.cacheMap = new Map(Object.entries(raw));
 	}
 
 	private async saveCache() {
-		this.plugin.settings.cache = Object.fromEntries(this.cacheMap);
+		this.plugin.settings.resultCacheIndex = Object.fromEntries(this.cacheMap);
 		await this.plugin.saveSettings();
 	}
 
@@ -140,7 +140,6 @@ export default class ResultFileCache {
 			this.cacheMap.set(rawHash, entries);
 		}
 
-		await this.removeInvalidCacheEntries(rawHash, entries);
 		let targetEntry = entries.find(
 			(entry) => this.isEntryEqual(entry, { sourcePath, pipeline, format })
 		);
@@ -163,27 +162,6 @@ export default class ResultFileCache {
 		await this.cache.addFile(fileName, content);
 
 		await this.saveCache();
-	}
-
-	//TODO: recheck if this is needed, or even if i can merge it with something else
-	private async removeInvalidCacheEntries(rawHash: string, entries: CacheEntry[]) {
-		const entriesToRemove = new Set<CacheEntry>();
-		for (const entry of entries) {
-			const fileName = this.getFileName(rawHash, entry);
-
-			if (
-				!(await this.cache.fileExists(fileName))
-			) {
-				entriesToRemove.add(entry);
-				continue;
-			}
-		}
-
-		for (let index = entries.length - 1; index >= 0; index--) {
-			if (entriesToRemove.has(entries[index])) {
-				entries.splice(index, 1);
-			}
-		}
 	}
 
 	async getResultFile(
@@ -259,7 +237,7 @@ export default class ResultFileCache {
 			try {
 				const { stem, extension } = extractStemAndExtension(resultFile);
 				const { rawHash, contextHash } = splitCacheId(stem);
-				
+
 				const hasMatchingEntry =
 					this.cacheMap
 						.get(rawHash)
@@ -281,26 +259,6 @@ export default class ResultFileCache {
 				await this.cache.deleteFile(resultFile);
 			}
 		}
-
-		const rawHashesToRemove: string[] = [];
-
-		for (const [rawHash, entries] of this.cacheMap) {
-			const validEntries = entries.filter((entry) => {
-				const fileName = this.getFileName(rawHash, entry);
-
-				return storedFileNames.has(fileName);
-			});
-
-			if (validEntries.length === 0) {
-				rawHashesToRemove.push(rawHash);
-			} else if (validEntries.length !== entries.length) {
-				this.cacheMap.set(rawHash, validEntries);
-			}
-		}
-
-		for (const rawHash of rawHashesToRemove) {
-			this.cacheMap.delete(rawHash);
-		}
 	}
 
 	private async ensureCacheIndexMatchesVault() {
@@ -317,11 +275,11 @@ export default class ResultFileCache {
 					console.error(
 						`Error removing cache for file ${filePath}:`,
 						err,
-					); 
+					);
 				}
 			}
 		}
-		
+
 		for (const filePath of filePathsToRemove) {
 			await this.removeReferencingFileFromCache(filePath);
 		}
@@ -360,11 +318,11 @@ export default class ResultFileCache {
 		for (const [rawHash, entries] of this.cacheMap) {
 			for (const entry of entries) {
 				const areDepsValid = await this.areDependenciesValid(
-						entry.dependencies,
-						validatedDependencies,
-					);
+					entry.dependencies,
+					validatedDependencies,
+				);
 				if (!areDepsValid) {
-					
+
 					await this.removeResultFileFromCache(
 						rawHash,
 						entry.sourcePath,
@@ -485,7 +443,6 @@ export default class ResultFileCache {
 	 */
 	async removeAllCached(): Promise<void> {
 		await this.cache.clearCache();
-		this.cacheMap.clear();
 		await this.saveCache();
 	}
 
@@ -525,7 +482,7 @@ export default class ResultFileCache {
 
 		return true;
 	}
-	
+
 
 	private stemToFileName(hash: string, format: ResultFileFormat): string {
 		return `${hash}.${format}`;
@@ -571,8 +528,8 @@ export default class ResultFileCache {
 	}
 
 	private isEntryEqual(
-		a: CacheEntry, 
-		b: {sourcePath: string, pipeline: CompilePipeline, format: ResultFileFormat}
+		a: CacheEntry,
+		b: { sourcePath: string, pipeline: CompilePipeline, format: ResultFileFormat }
 	): boolean {
 		return a.sourcePath === b.sourcePath &&
 			a.pipeline === b.pipeline &&

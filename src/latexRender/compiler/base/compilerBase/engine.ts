@@ -205,6 +205,7 @@ export default class LatexEngine {
 			texlive200: Record<string, string>;
 			font404: Record<string, number>;
 			font200: Record<string, string>;
+			downloadedTexLiveFiles: string[];
 		}>({
 			cmd: EngineCommands.FetchCache,
 		});
@@ -218,6 +219,8 @@ export default class LatexEngine {
 			cachedPackages: data.texlive200,
 			missingFonts: recordToString(data.font404),
 			cachedFonts: data.font200,
+
+			downloadedTexLiveFiles: data.downloadedTexLiveFiles,
 		};
 	}
 

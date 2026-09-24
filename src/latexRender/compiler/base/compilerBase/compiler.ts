@@ -1,4 +1,4 @@
-import { TexLiveCacheData } from 'src/settings/settings';
+import { TexLiveCacheIndex } from 'src/settings/settings';
 import LatexEngine, { CompileResult, EngineStatus, LatexCompilationSession } from './engine';
 import { waitFor } from 'src/latexRender/latexRenderer';
 
@@ -78,11 +78,11 @@ export default abstract class LatexCompiler {
 		return this.engines[0].flushCache();
 	}
 
-	fetchCacheData(): Promise<TexLiveCacheData[]> {
+	fetchCacheData() {
 		return Promise.all(this.engines.map((engine) => engine.fetchCacheData()));
 	}
 
-	async writeTexLiveCacheIndex(texLiveCacheData: TexLiveCacheData): Promise<void> {
+	async writeTexLiveCacheIndex(texLiveCacheData: TexLiveCacheIndex): Promise<void> {
 		this.validate();
 		return Promise.all(
 			this.engines.map((engine) =>

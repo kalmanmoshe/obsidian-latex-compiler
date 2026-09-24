@@ -54,7 +54,7 @@ type RenderOutput =
 	}
 	| {
 		type: 'pdf';
-		element: HTMLObjectElement;
+		element: HTMLElement;
 	}
 	| {
 		type: 'error';
@@ -118,14 +118,18 @@ export class LatexContextMenuPopulater {
 
 	private findOutput(): RenderOutput {
 		//Important: the order of these checks matters. PDF must be checked before SVG, because the PDF is rendered with a container that contains an SVG.
-		const pdf = this.blockEl.querySelector<HTMLObjectElement>(
-			'object.latex-pdf-object',
+		const pdfWrapper = this.blockEl.querySelector<HTMLElement>(
+			'.latex-pdf-wrapper',
 		);
 
-		if (pdf) {
+		if (
+			pdfWrapper && pdfWrapper.querySelector(
+				'object.latex-pdf-object, .latex-pdf-js-viewer',
+			)
+		) {
 			return {
 				type: 'pdf',
-				element: pdf,
+				element: pdfWrapper,
 			};
 		}
 

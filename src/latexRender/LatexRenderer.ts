@@ -1,8 +1,8 @@
-import { MarkdownPostProcessorContext } from 'obsidian';
+import { MarkdownPostProcessorContext, Platform } from 'obsidian';
 import { CompileResult, CompileStatus } from './compiler/base/compilerBase/engine';
 import LatexCompilerPlugin from '../main';
 import { CompilePipeline, CompilerType, ResultFileFormat } from 'src/settings/settings.js';
-import { insertPdf, insertPdfForExport } from './pdfConversion/pdfToHtml';
+import { insertPdf, insertPdfForExport, insertPdfWithPdfJs } from './pdfConversion/pdfToHtml';
 import parseLatexLog, { refactorLogToErrorMessage } from './logs/humanReadableLogs';
 import { VirtualFileSystem } from '../latexPreprocessor/virtualFileSystem';
 import { ProcessedLog } from './logs/latexLogParser';
@@ -473,6 +473,15 @@ export class LatexRenderer {
 
 		if (isPdfExportRender(renderChild.containerEl)) {
 			await insertPdfForExport(data, renderChild, stem);
+		} else if (Platform.isAndroidApp) {
+			await insertPdfWithPdfJs(
+				data, 
+				renderChild, 
+				stem,
+				task.sourcePath,
+				task.compilePipeline,
+				this.plugin,
+			);
 		} else {
 			await insertPdf(
 				data,
@@ -505,3 +514,6 @@ function isPdfExportRender(el: HTMLElement): boolean {
 		doc.body.querySelector(':scope > .print') !== null
 	);
 }
+
+
+

@@ -39,14 +39,14 @@ export interface CacheEntry {
 }
 
 
-export type CacheMap = Map<string, CacheEntry[]>;
+export type ResultCacheIndex = Map<string, CacheEntry[]>;
 
 /**
  * Raw source hash -> serialized result entries.
  */
-export type CacheJson = Record<string, CacheEntry[]>;
+export type ResultCacheIndexJson = Record<string, CacheEntry[]>;
 
-export interface TexLiveCacheData {
+export interface TexLiveCacheIndex {
 	missingPackages: StringMap;
 	cachedPackages: StringMap;
 	missingFonts: StringMap;
@@ -61,8 +61,8 @@ export interface LatexCompilerPluginSettings {
 	package_url: string;
 	physicalCache: boolean;
 	physicalCacheLocation: string;
-	cache: CacheJson;
-	texLiveCache: Array<StringMap>;
+	resultCacheIndex: ResultCacheIndexJson;
+	texLiveCacheIndex: Array<StringMap>;
 	overflowStrategy: OverflowStrategy;
 	compiler: CompilerType;
 
@@ -85,8 +85,8 @@ export const DEFAULT_SETTINGS: LatexCompilerPluginSettings = {
 	package_url: 'https://texlive.texlyre.org/',
 	physicalCache: true,
 	physicalCacheLocation: '',
-	cache: {},
-	texLiveCache: [{}, {}, {}, {}],
+	resultCacheIndex: {},
+	texLiveCacheIndex: [{}, {}, {}, {}],
 	overflowStrategy: "scroll",
 	compiler: CompilerType.PdfTeX,
 

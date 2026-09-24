@@ -101,9 +101,12 @@
 	flex-shrink: 0;
 }
 
+/* --- */
+/* Shared by the desktop <object> and Android PDF.js render */
 .latex-pdf-wrapper {
 	position: relative;
 	width: 100%;
+	min-width: 0;
 	overflow: hidden;
 
 	background: var(--background-primary);
@@ -167,6 +170,51 @@
 	display: block;
 	width: 100%;
 	border: 0;
+}
+
+/* Android PDF.js viewer */
+.latex-pdf-js-viewer {
+	position: relative;
+	width: 100%;
+	box-sizing: border-box;
+	overflow-x: auto;
+	overflow-y: scroll;
+	background: var(--background-secondary);
+	/* Its aspect-ratio is set from page 1 in TypeScript. */
+}
+
+.latex-pdf-js-viewer .latex-pdf-js-pages {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 0;
+	margin: 0;
+}
+
+.latex-pdf-js-viewer .latex-pdf-js-page {
+	position: relative;
+	flex: none;
+	box-sizing: border-box;
+	overflow: hidden;
+	margin: 0;
+	border: 0;
+	background: #fff;
+}
+
+.latex-pdf-js-viewer .canvasWrapper,
+.latex-pdf-js-viewer .textLayer {
+	position: absolute;
+	inset: 0;
+}
+
+.latex-pdf-js-viewer canvas {
+	display: block;
+	max-width: none;
+}
+
+.latex-pdf-js-viewer .textLayer {
+	z-index: 1;
 }
 
 /* pdf print */
