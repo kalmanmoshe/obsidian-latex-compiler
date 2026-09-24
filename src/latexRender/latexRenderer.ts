@@ -6,12 +6,12 @@ import { insertPdf, insertPdfForExport, insertPdfWithPdfJs } from './pdfConversi
 import parseLatexLog, { refactorLogToErrorMessage } from './logs/humanReadableLogs';
 import { VirtualFileSystem } from '../latexPreprocessor/virtualFileSystem';
 import { ProcessedLog } from './logs/latexLogParser';
-import PdfTeXCompiler from './compiler/swiftlatexpdftex/PdfTeXCompiler';
+import PdfTeXCompiler from './compiler/swiftlatexpdftex/pdfTeXCompiler';
 import { LatexTask } from './task/latexTask';
 import { PdfXeTeXCompiler } from './compiler/swiftlatexxetex/pdfXeTeXCompiler';
 import LatexCompiler from './compiler/base/compilerBase/compiler';
 import CompilerCache, { hashLatexContent } from './cache/compilerCache';
-import { LatexRenderQueue } from './task/LatexRenderQueue';
+import { LatexRenderQueue } from './task/latexRenderQueue';
 import { LATEX_RENDER_ID_KEY, pdfToOptimizedSVG, insertSvg } from './pdfConversion/pdfToSVG';
 import { CacheContent } from './cache/cacheBase/cacheBase';
 import { LatexRenderChild } from './task/latexRenderChild';
