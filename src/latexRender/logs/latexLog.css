@@ -55,136 +55,111 @@
 	color: purple;
 }
 
-details summary {
-	cursor: pointer;
-	font-weight: bold;
-	margin: 2px 0;
-}
+/* File tree structure */
 
-.latex-compiler-log-file-item {
-	margin: 4px 0;
-	padding: 4px 8px;
-	border-left: 2px solid var(--background-modifier-border);
-}
-
-.latex-compiler-log-file-label {
-	font-family: var(--font-monospace);
-	padding: 2px 4px;
-	border-radius: 4px;
-	transition: background 0.2s;
-}
-
-.latex-compiler-log-file-label:hover {
-	background-color: var(--background-modifier-hover);
-	cursor: pointer;
-}
-
-/* Indentation levels */
-.depth-0 .latex-compiler-log-file-label {
-	margin-left: 0px;
-	background-color: rgba(240, 240, 240, 0.1);
-}
-
-.depth-1 .latex-compiler-log-file-label {
-	margin-left: 10px;
-	background-color: rgba(240, 240, 240, 0.15);
-}
-
-.depth-2 .latex-compiler-log-file-label {
-	margin-left: 20px;
-	background-color: rgba(240, 240, 240, 0.2);
-}
-
-.depth-3 .latex-compiler-log-file-label {
-	margin-left: 30px;
-	background-color: rgba(240, 240, 240, 0.25);
-}
-
-/* Continue if needed... */
-.latex-compiler-log-file-wrapper {
-	margin: 2px 0;
-}
-
-.latex-compiler-log-file-details {
-	margin-left: 12px;
-}
-
-.depth-1 {
-	margin-left: 16px;
-}
-
-.depth-2 {
-	margin-left: 24px;
-}
-
-.depth-3 {
-	margin-left: 32px;
-}
-
-/* etc... */
-
-/* Clean minimal style */
-.latex-compiler-log-file-summary {
-	font-family: var(--font-monospace);
+.latex-compiler-dependencies {
 	font-size: 0.9em;
-	padding: 2px 4px;
+}
+
+.latex-compiler-dependency {
+	position: relative;
+	margin: 1px 0;
+}
+
+/* File row */
+.latex-compiler-dependency-summary,
+.latex-compiler-dependency-line {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+
+	min-height: 26px;
+	padding: 2px 6px;
 	border-radius: 4px;
-	cursor: pointer;
-	transition: background 0.2s;
-}
 
-.latex-compiler-log-file-summary:hover {
-	background-color: var(--background-modifier-hover);
-}
-
-/* Severity Coloring */
-.level-error {
-	border-left: 3px solid red;
-}
-
-.level-warning {
-	border-left: 3px solid orange;
-}
-
-.level-typesetting {
-	border-left: 3px solid purple;
-}
-
-/* File Display Clean Style */
-.latex-compiler-log-file-summary {
 	font-family: var(--font-monospace);
-	padding: 2px 4px;
-	border-radius: 4px;
+}
+
+.latex-compiler-dependency-summary {
 	cursor: pointer;
+	list-style: none;
 }
 
-.latex-compiler-log-file-line {
-	font-family: var(--font-monospace);
-	margin-left: 16px;
-	padding: 2px 4px;
-}
-
-.latex-compiler-log-modal {
-	width: 100%;
-	max-width: 1000px;
-}
-
-
-.latex-compiler-log-tab-content.is-hidden {
+.latex-compiler-dependency-summary::-webkit-details-marker {
 	display: none;
 }
 
-.latex-compiler-log-raw-scroll {
-	overflow: auto;
-	max-height: 500px;
+.latex-compiler-dependency-summary:hover,
+.latex-compiler-dependency-line:hover {
+	background: var(--background-modifier-hover);
 }
 
-.latex-compiler-log-raw-content {
-	margin: 0;
-	white-space: pre;
-	user-select: text;
+/* File name takes remaining space */
+.latex-compiler-dependency-path {
+	flex: 1;
+	min-width: 0;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
-.latex-compiler-log-copy-button {
-	margin-top: 5px;
+/* Nested load count */
+.latex-compiler-dependency-count {
+	flex-shrink: 0;
+
+	color: var(--text-muted);
+	font-family: var(--font-interface);
+	font-size: 0.85em;
+}
+
+/* Nested file group */
+.latex-compiler-dependency-children {
+	position: relative;
+
+	margin-left: 12px;
+	padding-left: 14px;
+
+	border-left: 1px solid var(--background-modifier-border);
+}
+
+/* Leaf nodes align with expandable rows */
+.latex-compiler-dependency-line {
+	padding-left: 18px;
+}
+
+/* Header */
+.latex-compiler-dependencies-header {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+
+	margin-bottom: 6px;
+}
+
+.latex-compiler-dependencies-description {
+	color: var(--text-muted);
+	font-size: 0.85em;
+}
+
+/* Explicit expandable indicator */
+.latex-compiler-dependency-summary::before {
+	content: "›";
+	flex-shrink: 0;
+
+	width: 14px;
+
+	color: var(--text-muted);
+	font-family: var(--font-interface);
+	font-size: 1.15em;
+	font-weight: 600;
+	text-align: center;
+
+	transition: transform 120ms ease;
+}
+
+.latex-compiler-dependency-details[open]
+	> .latex-compiler-dependency-summary::before {
+	transform: rotate(90deg);
+	color: var(--text-normal);
 }

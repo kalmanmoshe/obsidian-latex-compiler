@@ -7,42 +7,11 @@ export interface ErrorMessage {
 	line?: number;
 }
 
-export function errorDiv(info: ErrorMessage): HTMLElement {
-	const { title, cause, line, explanation, triggeringPackage } = info;
-	const container = Object.assign(activeDocument.createElement('div'), {
-		className: 'latex-compiler-error-container',
-	});
-
-	const content = Object.assign(activeDocument.createElement('div'), {
-		className: 'latex-compiler-error-content',
-	});
-	container.appendChild(content);
-
-	const errorDetails = [
-		['latex-compiler-error-title', title],
-		['latex-compiler-error-explanation', explanation],
-		['latex-compiler-error-cause', cause && `Triggered from ${cause}`],
-		['latex-compiler-error-package', triggeringPackage ? `Package: ${triggeringPackage}` : undefined],
-		['latex-compiler-error-line', line ? `At line: ${line}` : undefined],
-	];
-
-	errorDetails.forEach(([className, textContent]) => {
-		if (!textContent) return;
-		content.appendChild(
-			Object.assign(activeDocument.createElement('div'), {
-				className,
-				textContent,
-			}),
-		);
-	});
-
-	return container;
-}
-
 export enum ErrorLevel {
 	Error = 'error',
 	Warning = 'warning',
 	Typesetting = 'typesetting',
+	Info = 'info',
 }
 
 export function errorMessageDiv(

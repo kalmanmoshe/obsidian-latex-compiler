@@ -342,6 +342,7 @@ export default class LatexLogParser {
 			error: [],
 			warning: [],
 			typesetting: [],
+			info: [],
 		};
 		if (this.ignoreDuplicates) {
 			data = [...new Map(data.map((item) => [item.raw, item])).values()];

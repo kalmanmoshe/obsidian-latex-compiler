@@ -1,0 +1,133 @@
+/* Error message styles */
+
+.block-latex-error {
+	justify-content: center;
+	display: block;
+	width: 100%;
+	background-color: white;
+	color: black;
+}
+
+/* Severity definitions */
+
+.level-error {
+	--latex-message-color: var(--color-red);
+}
+
+.level-warning {
+	--latex-message-color: var(--color-orange);
+}
+
+.level-typesetting {
+	--latex-message-color: var(--color-purple);
+}
+
+.level-info {
+	--latex-message-color: var(--color-blue);
+}
+
+/* Message container */
+
+.latex-compiler-error-container {
+	color: var(--latex-message-color);
+
+	background-color: color-mix(
+		in srgb,
+		var(--latex-message-color) 12%,
+		var(--background-primary)
+	);
+
+	border-left: 5px solid var(--latex-message-color);
+
+	padding: 12px 16px;
+	margin: 10px auto;
+
+	font-family: 'Courier New', Courier, monospace;
+
+	border-radius: 6px;
+	box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+
+	position: relative;
+
+	width: 80%;
+	max-width: 600px;
+}
+
+.latex-compiler-error-content {
+	display: flex;
+	flex-direction: column;
+
+	/* Everything inside uses the severity color */
+	color: inherit;
+}
+
+.latex-compiler-error-title {
+	font-weight: bold;
+	font-size: 14px;
+	color: inherit;
+}
+
+.latex-compiler-error-explanation {
+	color: inherit;
+}
+
+.latex-compiler-error-cause {
+	font-size: 13px;
+	color: inherit;
+	margin-top: 4px;
+}
+
+.latex-compiler-error-package {
+	color: inherit;
+}
+
+.latex-compiler-error-line {
+	font-size: 12px;
+	font-weight: bold;
+	color: inherit;
+	margin-top: 6px;
+}
+
+
+/* File Display Clean Style */
+
+.latex-compiler-log-file-summary {
+	font-family: var(--font-monospace);
+	padding: 2px 4px;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.latex-compiler-log-file-line {
+	font-family: var(--font-monospace);
+	margin-left: 16px;
+	padding: 2px 4px;
+}
+
+.latex-compiler-log-modal {
+	width: 100%;
+	max-width: 1000px;
+}
+
+.latex-compiler-log-tab-content.is-hidden {
+	display: none;
+}
+
+.latex-compiler-log-raw-scroll {
+	overflow: auto;
+	max-height: 500px;
+}
+
+.latex-compiler-log-raw-content {
+	margin: 0;
+	white-space: pre;
+	user-select: text;
+}
+
+.latex-compiler-log-copy-button {
+	margin-top: 5px;
+}

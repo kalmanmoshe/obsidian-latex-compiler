@@ -186,12 +186,18 @@ export async function insertPdfForExport(
 		const page = await pdf.getPage(1);
 
 		try {
+			const viewport = page.getViewport({ scale: 1 });
+
 			const { canvas } = await paintPdfPage(page, doc, {
 				scale: 1,
 				outputScale: 2,
-				background: getPdfBackgroundColor(doc),
+				background: '#ffffff',
 				intent: 'print',
 			});
+
+			canvas.style.width = `${viewport.width}px`;
+			canvas.style.height = 'auto';
+			canvas.style.maxWidth = '100%';
 
 			if (renderChild.isUnloaded) {
 				canvas.width = 0;
@@ -200,8 +206,10 @@ export async function insertPdfForExport(
 			}
 
 			renderChild.disposeRenderer();
+
 			canvas.classList.add('latex-pdf-export');
 			canvas.setAttribute(LATEX_RENDER_ID_KEY, stem);
+
 			container.replaceChildren(canvas);
 		} finally {
 			page.cleanup();
@@ -368,34 +376,6 @@ export async function insertPdfWithPdfJs(
 			throw error;
 		}
 	}
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-function getPdfBackgroundColor(doc: Document) {
-	const win = doc.defaultView;
-
-	if (!win) {
-		throw new Error('Export document has no window.');
-	}
-
-	const styles = win.getComputedStyle(doc.body);
-
-	const pdfBackground =
-		styles.getPropertyValue('--pdf-background').trim()
-		|| styles.getPropertyValue('--background-primary').trim()
-		|| '#ffffff';
-	return pdfBackground;
 }
 
 async function pdfToHtml(pdfData: Uint8Array) {

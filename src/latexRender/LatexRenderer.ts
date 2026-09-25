@@ -176,7 +176,17 @@ export class LatexRenderer {
 
 		if (isPdfExportRender(el)) return;
 
-		this.queue?.push(task);
+		if (!this.isCompilerEnabled()) {
+			el.replaceChildren(errorMessageDiv(
+				{
+					title: 'Compiler disabled',
+					explanation: 'The LaTeX compiler is disabled on this device. and no result file was fund in the cache for this codeblokc. Enable it in the plugin settings to render LaTeX.',
+				},
+				ErrorLevel.Info,
+			));
+		} else {
+			this.queue.push(task);
+		}
 	}
 
 	/**

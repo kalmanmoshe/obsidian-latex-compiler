@@ -1,7 +1,7 @@
 import { App, Modal } from 'obsidian';
 import { File } from './latexLogParser';
 import { CachedLogInfo } from '../cache/logCache';
-import { errorDiv, ErrorLevel, errorMessageDiv } from '../errors/errorDisplay';
+import { ErrorLevel, errorMessageDiv } from '../errors/errorDisplay';
 import { pluginErrorToErrorMessage } from '../errors/pluginErrors';
 import { logEntryToErrorMessage } from './humanReadableLogs';
 
@@ -35,17 +35,17 @@ export class LogDisplayModal extends Modal {
 			});
 		}
 
-		if (log.files.length > 0) {
-			tabs.push({
-				name: 'Files',
-				render: (container) => this.renderFiles(container),
-			});
-		}
-
 		if (log.raw?.trim()) {
 			tabs.push({
 				name: 'Raw',
 				render: (container) => this.renderRaw(container),
+			});
+		}
+
+		if (log.files.length > 0) {
+			tabs.push({
+				name: 'Dependencies',
+				render: (container) => this.renderFiles(container),
 			});
 		}
 
@@ -88,12 +88,13 @@ export class LogDisplayModal extends Modal {
 
 	private renderErrors(container: HTMLElement) {
 		for (const error of this.logInfo.userFacingErrors) {
-			container.appendChild(errorDiv(pluginErrorToErrorMessage(error)));
+			container.appendChild(errorMessageDiv(pluginErrorToErrorMessage(error)));
 		}
 		const severityOrder = {
 			[ErrorLevel.Error]: 0,
 			[ErrorLevel.Warning]: 1,
 			[ErrorLevel.Typesetting]: 2,
+			[ErrorLevel.Info]: 3,
 		};
 
 		const logEntries = [...this.logInfo.log.all]
@@ -114,28 +115,111 @@ export class LogDisplayModal extends Modal {
 	}
 
 	private renderFiles(container: HTMLElement) {
-		const renderTree = (file: File, parent: HTMLElement, depth = 0) => {
-			const wrapper = parent.createDiv('latex-compiler-log-file-wrapper depth-' + depth);
+		const files = this.logInfo.log.files;
 
-			if (file.files?.length) {
+		const countNestedLoads = (file: File): number => {
+			if (!file.files?.length) return 0;
+
+			return file.files.reduce(
+				(total, child) => total + 1 + countNestedLoads(child),
+				0,
+			);
+		};
+
+		const collectUniqueFiles = (
+			file: File,
+			paths: Set<string>,
+		) => {
+			paths.add(file.path);
+
+			file.files?.forEach((child) => {
+				collectUniqueFiles(child, paths);
+			});
+		};
+
+		const uniqueFiles = new Set<string>();
+
+		files.forEach((file) => {
+			collectUniqueFiles(file, uniqueFiles);
+		});
+
+		const uniqueFileCount = uniqueFiles.size;
+
+		const header = container.createDiv({
+			cls: 'latex-compiler-dependencies-header',
+		});
+
+		header.createSpan({
+			text: `${uniqueFileCount} unique ${
+				uniqueFileCount === 1 ? 'file' : 'files'
+			} loaded during compilation`,
+			cls: 'latex-compiler-dependencies-description',
+		});
+
+		const tree = container.createDiv({
+			cls: 'latex-compiler-dependencies',
+		});
+
+		const renderTree = (
+			file: File,
+			parent: HTMLElement,
+			depth = 0,
+		) => {
+			const wrapper = parent.createDiv({
+				cls: `latex-compiler-dependency depth-${depth}`,
+			});
+
+			const hasChildren = !!file.files?.length;
+
+			if (hasChildren) {
 				const details = wrapper.createEl('details', {
-					cls: 'latex-compiler-log-file-details',
+					cls: 'latex-compiler-dependency-details',
 				});
-				details.createEl('summary', {
+
+				details.open = depth === 0;
+
+				const summary = details.createEl('summary', {
+					cls: 'latex-compiler-dependency-summary',
+				});
+
+				summary.createSpan({
 					text: this.displayPath(file.path),
-					cls: 'latex-compiler-log-file-summary',
+					cls: 'latex-compiler-dependency-path',
 				});
-				file.files.forEach((child) => renderTree(child, details, depth + 1));
+
+				const nestedLoadCount = countNestedLoads(file);
+
+				summary.createSpan({
+					text: `${nestedLoadCount} ${
+						nestedLoadCount === 1
+							? 'nested load'
+							: 'nested loads'
+					}`,
+					cls: 'latex-compiler-dependency-count',
+				});
+
+				const children = details.createDiv({
+					cls: 'latex-compiler-dependency-children',
+				});
+
+				file.files.forEach((child) => {
+					renderTree(child, children, depth + 1);
+				});
 			} else {
-				// Just a line, no <details>
-				wrapper.createEl('div', {
+				const line = wrapper.createDiv({
+					cls: 'latex-compiler-dependency-line',
+				});
+
+				line.createSpan({
 					text: this.displayPath(file.path),
-					cls: 'latex-compiler-log-file-line',
+					cls: 'latex-compiler-dependency-path',
 				});
 			}
 		};
 
-		this.logInfo.log.files.forEach((file) => renderTree(file, container));
+		files.forEach((file) => {
+			renderTree(file, tree);
+		});
 	}
 
 	private displayPath(path: string): string {
