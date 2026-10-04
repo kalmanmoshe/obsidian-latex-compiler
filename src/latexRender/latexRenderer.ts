@@ -1,13 +1,13 @@
 import { MarkdownPostProcessorContext, Platform } from 'obsidian';
 import { CompileResult, CompileStatus } from './compiler/base/compilerBase/engine';
 import LatexCompilerPlugin from '../main';
-import { CompilePipeline, CompilerType, ResultFileFormat } from 'src/settings/settings.js';
+import { CompilerType, ResultFileFormat } from 'src/settings/settings.js';
 import { insertPdf, insertPdfForExport, insertPdfWithPdfJs } from './pdfConversion/pdfToHtml';
 import parseLatexLog, { refactorLogToErrorMessage } from './logs/humanReadableLogs';
 import { VirtualFileSystem } from '../latexPreprocessor/virtualFileSystem';
 import { ProcessedLog } from './logs/latexLogParser';
 import PdfTeXCompiler from './compiler/swiftlatexpdftex/pdfTeXCompiler';
-import { LatexTask } from './task/latexTask';
+import { LatexTask, LatexTaskPriority } from './task/latexTask';
 import { PdfXeTeXCompiler } from './compiler/swiftlatexxetex/pdfXeTeXCompiler';
 import LatexCompiler from './compiler/base/compilerBase/compiler';
 import CompilerCache, { hashLatexContent } from './cache/compilerCache';
@@ -15,7 +15,7 @@ import { LatexRenderQueue } from './task/latexRenderQueue';
 import { LATEX_RENDER_ID_KEY, pdfToOptimizedSVG, insertSvg } from './pdfConversion/pdfToSVG';
 import { CacheContent } from './cache/cacheBase/cacheBase';
 import { LatexRenderChild } from './task/latexRenderChild';
-import { LatexCodeBlockDefinition } from './codeBlockTypes';
+import { LatexCodeBlockDefinition, LatexCodeBlockLanguage } from './codeBlockTypes';
 import { ErrorLevel, ErrorMessage, errorMessageDiv } from './errors/errorDisplay';
 import { LatexCompilationError, pluginErrorToErrorMessage, toErrorString, UserFacingPluginError } from './errors/pluginErrors';
 import { LatexRenderCompilationSession } from './latexRenderCompilationSession';
@@ -141,28 +141,27 @@ export class LatexRenderer {
 		source: string,
 		el: HTMLElement,
 		ctx: MarkdownPostProcessorContext,
+		codeBlockLanguage: LatexCodeBlockLanguage,
 		definition: LatexCodeBlockDefinition,
 	) {
-		el.classList.add(
-			'latex-compiler-render',
-		);
+		el.classList.add('latex-compiler-render');
 
 		if (definition.resultFormat === 'svg') {
 			el.classList.add(`latex-compiler-overflow-${this.plugin.settings.overflowStrategy}`);
 		}
 
 		const rawHash = hashLatexContent(source);
-		const createResult = await LatexTask.createAsync(this.plugin, definition, source, el, ctx);
+		const createResult = await LatexTask.createAsync(this.plugin, codeBlockLanguage, definition, source, el, ctx);
 
 		if (createResult.isError) {
-			const child = new LatexRenderChild(el);
+			const child = new LatexRenderChild(el, this.plugin, ctx.sourcePath);
 			ctx.addChild(child);
 			this.displayError(
 				child,
 				createResult.result,
 				getCacheId(rawHash, ctx.sourcePath, definition.compilePipeline),
 				ctx.sourcePath,
-				definition.compilePipeline
+				codeBlockLanguage
 			);
 			return;
 		}
@@ -174,8 +173,6 @@ export class LatexRenderer {
 		const wasRestoredFromCache = await this.restoreFromCache(task);
 		if (wasRestoredFromCache) return;
 
-		if (isPdfExportRender(el)) return;
-
 		if (!this.isCompilerEnabled()) {
 			el.replaceChildren(errorMessageDiv(
 				{
@@ -185,7 +182,17 @@ export class LatexRenderer {
 				ErrorLevel.Info,
 			));
 		} else {
-			this.queue.push(task);
+			const isPdfExport = isPdfExportRender(el)
+			const priority = isPdfExport ? LatexTaskPriority.Export : LatexTaskPriority.Regular
+			const completion = this.queue.push(task, priority);
+
+			if (isPdfExport) {
+				await completion;
+			} else {
+				void completion.catch((err) => {
+					console.error('Queue worker crashed:', err);
+				});
+			}
 		}
 	}
 
@@ -334,7 +341,7 @@ export class LatexRenderer {
 	): void {
 		// there is nothing to display the error to, so we just return.
 		if (!task.renderChild) return;
-		this.displayError(task.renderChild, err, task.getStem(), task.sourcePath, task.compilePipeline);
+		this.displayError(task.renderChild, err, task.getStem(), task.sourcePath, task.codeBlockLanguage);
 	}
 
 	private displayError(
@@ -342,7 +349,7 @@ export class LatexRenderer {
 		err: unknown,
 		cacheId: string,
 		sourcePath: string,
-		pipeline: CompilePipeline,
+		codeBlockLanguage: LatexCodeBlockLanguage,
 	): void {
 		const el = renderChild.containerEl;
 		el.innerHTML = '';
@@ -358,7 +365,7 @@ export class LatexRenderer {
 		const child = errorMessageDiv(processedError, ErrorLevel.Error);
 		child.setAttribute(LATEX_RENDER_ID_KEY, cacheId);
 		el.appendChild(child);
-		this.plugin.menuDecider.add(renderChild, sourcePath, pipeline)
+		this.plugin.menuDecider.add(renderChild, sourcePath, codeBlockLanguage)
 	}
 
 	private async renderLatexToElement(task: LatexTask): Promise<void> {
@@ -432,7 +439,7 @@ export class LatexRenderer {
 		if (format === 'pdf') return pdfData;
 
 		const config = {
-			invertColorsInDarkMode: this.plugin.settings.invertColorsInDarkMode,
+			adaptSVGColorsToTheme: this.plugin.settings.adaptSVGColorsToTheme,
 			stem,
 		};
 
@@ -470,7 +477,7 @@ export class LatexRenderer {
 				return false;
 			}
 
-			insertSvg(data, renderChild, task.sourcePath, task.compilePipeline, this.plugin);
+			insertSvg(data, renderChild, task.sourcePath, task.codeBlockLanguage, this.plugin);
 			return true;
 		}
 
@@ -485,11 +492,11 @@ export class LatexRenderer {
 			await insertPdfForExport(data, renderChild, stem);
 		} else if (Platform.isAndroidApp) {
 			await insertPdfWithPdfJs(
-				data, 
-				renderChild, 
+				data,
+				renderChild,
 				stem,
 				task.sourcePath,
-				task.compilePipeline,
+				task.codeBlockLanguage,
 				this.plugin,
 			);
 		} else {
@@ -498,7 +505,7 @@ export class LatexRenderer {
 				renderChild,
 				stem,
 				task.sourcePath,
-				task.compilePipeline,
+				task.codeBlockLanguage,
 				this.plugin,
 			);
 		}

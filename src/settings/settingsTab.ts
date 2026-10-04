@@ -44,14 +44,14 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 		addToggleSetting(
 			containerEl,
 			(value: boolean) => {
-				this.plugin.settings.invertColorsInDarkMode = value;
+				this.plugin.settings.adaptSVGColorsToTheme = value;
 				void this.plugin.saveSettings()
 			},
 			{
-				name: 'Invert colors in dark mode',
+				name: 'Adapt SVG colors to theme',
 				description:
-					'Invert colors in diagrams (e.g. axes, arrows) when in dark mode, so that they are visible.',
-				defValue: this.plugin.settings.invertColorsInDarkMode,
+					'Adjust black and white SVG colors to match the current Obsidian theme, keeping diagrams visible in both light and dark mode.',
+				defValue: this.plugin.settings.adaptSVGColorsToTheme,
 			},
 		);
 		addDropdownSetting(
@@ -62,16 +62,17 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 			},
 			{
 				name: 'SVG render sizing',
-				description: 'Choose how SVG renders behave when they are wider than the note.',
+				description: 'Choose how SVG renders are sized when displayed in the note.',
 				dropDownOptions: {
-					downscale: 'Fit to width',
-					scroll: 'Keep size and scroll',
-					hidden: 'Keep size and clip',
+					fit: 'Fit to note width',
+					downscale: 'Preserve size, shrink if needed',
+					scroll: 'Preserve size and scroll',
+					hidden: 'Preserve size and clip',
 				},
 				defValue: this.plugin.settings.overflowStrategy,
 			},
 		);
-		
+
 		addDropdownSetting(
 			containerEl,
 			async (value: string) => {
@@ -91,7 +92,7 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 			},
 		);
 	}
-	
+
 	private displayCachedSettings() {
 		const containerEl = this.containerEl;
 		this.addHeading(containerEl, 'cache', 'database');

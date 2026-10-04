@@ -1,15 +1,15 @@
 import { App, Notice } from "obsidian";
-import { LatexSourceType } from "src/latexRender/latexDependency";
 import { LatexSourceProcessor } from "src/latexPreprocessor/latexSourceProcessor";
 import { VirtualFileSystem } from "src/latexPreprocessor/virtualFileSystem";
 import LatexCompilerPlugin from "src/main";
 import { getAutoUseFilePaths } from "src/obsidian/fileWatch";
+import { CompilePipeline } from "src/settings/settings";
 
 export interface LatexPreprocessor {
     process(
         content: string,
         sourcePath: string,
-        sourceType: LatexSourceType,
+        compilePipeline: CompilePipeline,
     ): Promise<string>;
 
     refresh(
@@ -19,8 +19,8 @@ export interface LatexPreprocessor {
 }
 
 export class BasicLatexPreprocessor implements LatexPreprocessor {
-    async process(content: string, _: string, sourceType: LatexSourceType): Promise<string> {
-        if (sourceType !== LatexSourceType.TikzCodeBlock) return content;
+    async process(content: string, _: string, compilePipeline: CompilePipeline): Promise<string> {
+        if (compilePipeline !== CompilePipeline.Process) return content;
 
         content = content.replaceAll('&nbsp;', '');
         let lines = content.split("\n");
@@ -48,12 +48,12 @@ export class SmartLatexPreprocessor implements LatexPreprocessor {
         this.processor = new LatexSourceProcessor(this.vfs, this.app);
     }
 
-    async process(content: string, sourcePath: string, sourceType: LatexSourceType): Promise<string> {
+    async process(content: string, sourcePath: string, compilePipeline: CompilePipeline): Promise<string> {
 
         const result = await this.processor.parseFile(
             content,
             sourcePath,
-            sourceType,
+            compilePipeline,
         );
 
         return result.content;

@@ -5,10 +5,11 @@ import {
 	resolvePathRelToVault,
 	CODE_BLOCK_NAME_SEPARATOR,
 } from '../latexRender/resolvers/paths';
-import { LatexDependency, LatexSourceType } from 'src/latexRender/latexDependency';
+import { LatexDependency } from 'src/latexRender/latexDependency';
 import { App } from 'obsidian';
 import { findLatexInputReferences } from './latexInputScanner';
 import { VirtualFileSystem } from './virtualFileSystem';
+import { CompilePipeline } from 'src/settings/settings';
 
 export interface LatexDependencyNode {
 	dependency: LatexDependency;
@@ -30,10 +31,10 @@ export class LatexSourceProcessor {
 	async parseFile(
 		content: string,
 		sourcePath: string,
-		sourceType: LatexSourceType
+		compilePipeline: CompilePipeline
 	) {
 
-		if (sourceType !== LatexSourceType.TikzCodeBlock) {
+		if (compilePipeline !== CompilePipeline.Process) {
 			return {
 				content,
 				path: sourcePath,

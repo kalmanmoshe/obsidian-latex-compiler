@@ -1,5 +1,5 @@
-import async from 'async';
-import { LatexTask } from './latexTask';
+import async, { AsyncPriorityQueue } from 'async';
+import { LatexTask, LatexTaskPriority } from './latexTask';
 
 type InternalTask<T> = {
 	data: T;
@@ -7,7 +7,7 @@ type InternalTask<T> = {
 	next: InternalTask<T> | null;
 };
 
-type QueueObject<T> = async.QueueObject<T> & {
+type PriorityQueueObject<T> = AsyncPriorityQueue<T> & {
 	_tasks: {
 		head: InternalTask<T> | null;
 		tail: InternalTask<T> | null;
@@ -17,13 +17,13 @@ type QueueObject<T> = async.QueueObject<T> & {
 };
 
 export class LatexRenderQueue {
-	private queue: QueueObject<LatexTask>;
+	private queue: PriorityQueueObject<LatexTask>;
 
 	constructor(private renderTask: (task: LatexTask) => Promise<boolean>) {
 		this.configQueue();
 	}
 
-	push(task: LatexTask) {
+	push(task: LatexTask, priority: LatexTaskPriority) {
 		const blockId = task.getBlockId();
 
 		this.queue.remove((node) => node.data.getBlockId() === blockId);
@@ -31,13 +31,15 @@ export class LatexRenderQueue {
 		const index = this.queue.running() + this.queue.length();
 
 		task.el.appendChild(createWaitingCountdown(index));
-		void this.queue.push(task);
+		const completion = this.queue.push(task, priority);
 
 		updateQueueCountdown(this.queue);
+		return completion;
 	}
 
 	removeFromWaiting(filterFn: (task: LatexTask) => boolean) {
 		this.queue.remove((node) => filterFn(node.data));
+		updateQueueCountdown(this.queue);
 	}
 
 	abortAllWaiting() {
@@ -82,20 +84,23 @@ export class LatexRenderQueue {
 	}
 
 	configQueue() {
-		this.queue = async.queue((task: LatexTask, done) => {
-			(async () => {
+		this.queue = async.priorityQueue(async (task: LatexTask) => {
+			try {
 				await this.renderTask(task);
+			} catch (err) {
+				console.error(
+					'Queue worker crashed:',
+					err,
+					task.getDebugInfo(),
+				);
+			} finally {
 				updateQueueCountdown(this.queue);
-				done();
-			})().catch((err) => {
-				console.error('Queue worker crashed:', err, task.getDebugInfo());
-				done();
-			});
-		}, 1) as QueueObject<LatexTask>; // Concurrency is set to 1, so tasks run one at a time
+			}
+		}, 1) as PriorityQueueObject<LatexTask>; // Concurrency is set to 1, so tasks run one at a time
 	}
 }
 
-const updateQueueCountdown = (queue: QueueObject<LatexTask>) => {
+const updateQueueCountdown = (queue: PriorityQueueObject<LatexTask>) => {
 	let taskNode = queue._tasks.head;
 	let index = queue.running();
 	while (taskNode) {

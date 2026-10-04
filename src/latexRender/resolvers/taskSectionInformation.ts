@@ -16,6 +16,8 @@ export interface TaskSectionInformation {
 	 * the source code of the task (the code block) including the delimiters.
 	 */
 	codeBlock: string;
+
+	language: string;
 }
 
 /**
@@ -45,30 +47,34 @@ function getLatexTaskSectionInfosFromString(
 	const lines = string.split('\n');
 	// Filter sections that are code blocks with latex or tikz language hints.
 	sections = sections.filter((section: SectionCache) => section.type === 'code');
-	let codeBlocks: {
-		lineStart: number;
-		lineEnd: number;
-		codeBlock: string;
-	}[] = [];
+	let codeBlocks: TaskSectionInformation[] = [];
 	for (const section of sections) {
 		const codeBlock = lines
 			.slice(section.position.start.line, section.position.end.line + 1)
 			.join('\n');
-		if (!codeBlock.split('\n')[0].match(latexCodeBlockLanguageRegex)) continue;
+		const language = codeBlock.split('\n')[0].match(latexCodeBlockLanguageRegex)?.[1];
+		if (!language) continue;
 		codeBlocks.push({
 			lineStart: section.position.start.line,
 			lineEnd: section.position.end.line,
 			codeBlock: codeBlock,
+			language: language,
 		});
 	}
 	codeBlocks = codeBlocks.sort((a, b) => a.lineStart - b.lineStart);
 	return codeBlocks;
 }
 
-export async function findTaskSectionInfoFromHashInFile(file: TFile, hash: string, app: App) {
+export async function findTaskSectionInfoFromHashInFile(
+	file: TFile, 
+	hash: string, 
+	language: string, 
+	app: App
+) {
 	const blockSections = await getLatexTaskSectionInfosFromFile(file, app);
 	const matchedSections = blockSections.filter(
-		(section) => hashLatexContent(codeBlockToContent(section.codeBlock)) === hash,
+		(section) => hashLatexContent(codeBlockToContent(section.codeBlock)) === hash 
+		&& section.language === language,
 	);
 	if (matchedSections.length === 0) {
 		return undefined;

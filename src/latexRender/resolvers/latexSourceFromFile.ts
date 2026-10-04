@@ -1,25 +1,8 @@
 import { App, TFile } from 'obsidian';
 import { getLatexTaskSectionInfosFromFile } from './taskSectionInformation';
-import { codeBlockLanguageRegex, codeBlockToContent } from 'obsidian-dev-utils';
+import { codeBlockToContent } from 'obsidian-dev-utils';
 import { hashLatexContent } from '../cache/compilerCache';
-import { extractCodeBlockLanguage } from 'obsidian-dev-utils';
 import { latexCodeBlockLanguageRegex } from '../codeBlockTypes';
-/** rooles:
- * - find = Might be undefined
- * - get = Will always return a value or throw an error
- * - getAll = Will always return an array, might be empty
- * - extract = Will always return a value And ensure no conflicts or throw an error
- * - codeBlock = the code block text including the opening and closing code block delimiters (i.e., the ``` lines).
- * - content = the content of the code block without the opening and closing delimiters.
- * - sectionInfo = MarkdownSectionInformation
- * - taskSectionInfo = TaskSectionInformation
- */
-/**
- *
- *
- * @param section
- * @returns
- */
 
 export async function extractAllSectionsByFile(app: App) {
 	const files = app.vault.getFiles().filter((f) => f.extension === 'md');
@@ -36,9 +19,13 @@ export function extractCodeBlockMetadata(text: string): {
 	language?: string;
 	name?: string;
 } {
-	const language = text.match(codeBlockLanguageRegex)?.[1];
+	const language = extractCodeBlockLanguage(text);
 	const name = extractCodeBlockName(text);
 	return { language, name };
+}
+
+export function extractCodeBlockLanguage(text: string): string | undefined {
+	return text.split('\n')[0].match(latexCodeBlockLanguageRegex)?.[1];
 }
 
 /**

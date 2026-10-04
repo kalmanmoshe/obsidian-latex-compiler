@@ -19,7 +19,7 @@ export async function getCurrentCursorLocationSection(file: TFile, editor: Edito
 }
 
 /**
- * Tries to find a codeblock section by exact or fuzzy string match against the file content.
+ * Tries to find a code block section by exact or fuzzy string match against the file content.
  * i need to faze this out
  */
 export async function findMatchingCodeBlockSections(

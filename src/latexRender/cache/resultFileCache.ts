@@ -21,6 +21,7 @@ export const resultFileCacheFormats = new Set<ResultFileFormat>([
 	'svg',
 	'pdf',
 ]);
+const CLEANUP_DELAY_MS = 3000;
 
 export default class ResultFileCache {
 	private plugin: LatexCompilerPlugin;
@@ -29,6 +30,8 @@ export default class ResultFileCache {
 	 */
 	private cacheMap: ResultCacheIndex;
 	private cache: CacheBase;
+	private filesPendingCleanup = new Set<string>();
+	private cleanupTimer: number | null = null;
 
 	constructor(plugin: LatexCompilerPlugin) {
 		this.plugin = plugin;
@@ -219,6 +222,25 @@ export default class ResultFileCache {
 		];
 	}
 
+	markCandidateForCleanup(sourcePath: string) {
+		this.filesPendingCleanup.add(sourcePath);
+		this.scheduleCleanup();
+	}
+
+	private scheduleCleanup() {
+		if (this.cleanupTimer !== null) {
+			return;
+		}
+
+		this.cleanupTimer = window.setTimeout(() => {
+			this.cleanupTimer = null;
+			const filesPendingCleanup = new Set(this.filesPendingCleanup);
+			this.filesPendingCleanup.clear();
+			void this.ensureCacheIndexMatchesVault(filesPendingCleanup);
+			
+		}, CLEANUP_DELAY_MS);
+	}
+
 	private async cleanUpCache(): Promise<void> {
 		await this.cache.purgeInvalidCacheFiles();
 		await this.ensureCacheIndexMatchesStoredFiles();
@@ -261,10 +283,13 @@ export default class ResultFileCache {
 		}
 	}
 
-	private async ensureCacheIndexMatchesVault() {
+	private async ensureCacheIndexMatchesVault(
+		filePaths?: Iterable<string>,
+	) {
+		const pathsToCheck = filePaths ?? this.getAllReferencingFilePathsFromCache();
 		const filePathsToRemove: string[] = [];
 		// Find files that dont exsist anymore if file dose exist, remove unused caches for it.
-		for (const filePath of this.getAllReferencingFilePathsFromCache()) {
+		for (const filePath of pathsToCheck) {
 			const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
 			if (!file) {
 				filePathsToRemove.push(filePath);
@@ -322,7 +347,6 @@ export default class ResultFileCache {
 					validatedDependencies,
 				);
 				if (!areDepsValid) {
-
 					await this.removeResultFileFromCache(
 						rawHash,
 						entry.sourcePath,
@@ -346,6 +370,7 @@ export default class ResultFileCache {
 
 		for (const { hash, name } of hashes) {
 			const format = getLatexCodeBlockDefinition(name).resultFormat;
+			if (!format) continue;
 			addFormatReference(references, hash, format);
 		}
 

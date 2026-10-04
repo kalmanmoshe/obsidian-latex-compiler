@@ -3,7 +3,7 @@ import LatexCompilerPlugin from 'src/main';
 import { LATEX_RENDER_ID_KEY } from './pdfToSVG';
 import { loadPdfJs, setIcon } from 'obsidian';
 import { LatexRenderChild } from '../task/latexRenderChild';
-import { CompilePipeline } from 'src/settings/settings';
+import { LatexCodeBlockLanguage } from '../codeBlockTypes';
 
 type PdfJs = Awaited<ReturnType<typeof loadPdfJs>>;
 type LoadingTask = ReturnType<PdfJs['getDocument']>;
@@ -20,7 +20,7 @@ function createPdfShell(
 	renderChild: LatexRenderChild,
 	stem: string,
 	sourcePath: string,
-	compilePipeline: CompilePipeline,
+	codeBlockLanguage: LatexCodeBlockLanguage,
 	plugin: LatexCompilerPlugin,
 ): PdfShell {
 	const container = renderChild.containerEl;
@@ -48,7 +48,7 @@ function createPdfShell(
 			event,
 			renderChild,
 			sourcePath,
-			compilePipeline,
+			codeBlockLanguage,
 		);
 	};
 
@@ -139,7 +139,7 @@ export async function insertPdf(
 	renderChild: LatexRenderChild,
 	stem: string,
 	sourcePath: string,
-	compilePipeline: CompilePipeline,
+	codeBlockLanguage: LatexCodeBlockLanguage,
 	plugin: LatexCompilerPlugin,
 ): Promise<void> {
 	const { attr, url } = await pdfToHtml(pdfData);
@@ -156,7 +156,7 @@ export async function insertPdf(
 		renderChild,
 		stem,
 		sourcePath,
-		compilePipeline,
+		codeBlockLanguage,
 		plugin,
 	);
 
@@ -224,7 +224,7 @@ export async function insertPdfWithPdfJs(
 	renderChild: LatexRenderChild,
 	stem: string,
 	sourcePath: string,
-	compilePipeline: CompilePipeline,
+	codeBlockLanguage: LatexCodeBlockLanguage,
 	plugin: LatexCompilerPlugin,
 ): Promise<void> {
 	const container = renderChild.containerEl;
@@ -287,7 +287,7 @@ export async function insertPdfWithPdfJs(
 			renderChild,
 			stem,
 			sourcePath,
-			compilePipeline,
+			codeBlockLanguage,
 			plugin,
 		);
 

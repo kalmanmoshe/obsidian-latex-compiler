@@ -1,8 +1,8 @@
 import LatexCompilerPlugin from 'src/main';
 import PdfToSvgWasm from '@pdf-to-svg-runtime';
 import { LatexRenderChild } from '../task/latexRenderChild';
-import { CompilePipeline } from 'src/settings/settings';
 import { optimizeSVG } from './optimizeSVG';
+import { LatexCodeBlockLanguage } from '../codeBlockTypes';
 
 export const LATEX_RENDER_ID_KEY = 'data-id';
 
@@ -39,7 +39,7 @@ export async function pdfToSVG(pdfData: Uint8Array): Promise<string> {
 export async function pdfToOptimizedSVG(
     pdfData: Uint8Array,
     config: {
-        invertColorsInDarkMode: boolean;
+        adaptSVGColorsToTheme: boolean;
         stem: string;
     },
 ) {
@@ -49,8 +49,8 @@ export async function pdfToOptimizedSVG(
 
     svg = optimizeSVG(svg);
 
-    if (config.invertColorsInDarkMode) {
-        svg = colorSVGinDarkMode(svg);
+    if (config.adaptSVGColorsToTheme) {
+        svg = makeSVGThemeAware(svg);
     }
 
     return setSvgDataId(svg, config.stem);
@@ -104,21 +104,13 @@ function prefixSvgIds(svgString: string, prefix: string): string {
 	return new XMLSerializer().serializeToString(svg);
 }
 
-function colorSVGinDarkMode(svg: string) {
-    // Replace the color "black" with currentColor (the current text color)
-    // so that diagram axes, etc are visible in dark mode
-    // and replace "white" with the background color
-    if (activeDocument.body.classList.contains('theme-dark')) {
-        svg = svg
-            .replace(/rgb\(0%, 0%, 0%\)/g, 'currentColor')
-            .replace(/rgb\(100%, 100%, 100%\)/g, 'var(--background-primary)');
-    } else {
-        svg = svg
-            .replace(/rgb\(100%, 100%, 100%\)/g, 'currentColor')
-            .replace(/rgb\(0%, 0%, 0%\)/g, 'var(--background-primary)');
-    }
-
-    return svg;
+function makeSVGThemeAware(svg: string) {
+    return svg
+        .replace(/rgb\(0%, 0%, 0%\)/g, 'currentColor')
+        .replace(
+            /rgb\(100%, 100%, 100%\)/g,
+            'var(--background-primary)',
+        );
 }
 
 function setSvgDataId(svg: string, id: string): string {
@@ -148,7 +140,7 @@ export function insertSvg(
     svgString: string, 
     renderChild: LatexRenderChild, 
     filePath: string, 
-    compilePipeline: CompilePipeline,
+    codeBlockLanguage: LatexCodeBlockLanguage,
     plugin: LatexCompilerPlugin
 ): void {
     const ownerDocument = renderChild.containerEl.ownerDocument;
@@ -176,5 +168,5 @@ export function insertSvg(
     }
 
     renderChild.containerEl.replaceChildren(ownerDocument.adoptNode(svg));
-    plugin.menuDecider.add(renderChild, filePath, compilePipeline)
+    plugin.menuDecider.add(renderChild, filePath, codeBlockLanguage)
 }

@@ -3,7 +3,7 @@ import LatexCompilerPlugin from 'src/main';
 import { getTestCommands } from 'src/tests/compileTest';
 import { extractAllSectionsByFile } from 'src/latexRender/resolvers/latexSourceFromFile';
 import { hashLatexContent } from 'src/latexRender/cache/compilerCache';
-import { LatexTask } from 'src/latexRender/task/latexTask';
+import { LatexTask, LatexTaskPriority } from 'src/latexRender/task/latexTask';
 import { codeBlockToContent } from 'obsidian-dev-utils';
 import { createBenchmarkCurrentFileCommand } from 'src/tests/benchmarkCurrentFileTest';
 
@@ -49,7 +49,7 @@ async function renderAllUnrenderedCodeBlocks(plugin: LatexCompilerPlugin) {
 	for (const { file, codeBlockSections } of sectionInfosByFile) {
 		for (const codeBlock of codeBlockSections) {
 			const task = LatexTask.fromSectionInfos(plugin, file.path, [codeBlock]);
-			plugin.latexRenderer.queue.push(task);
+			plugin.latexRenderer.queue.push(task, LatexTaskPriority.Regular);
 			count++;
 		}
 	}

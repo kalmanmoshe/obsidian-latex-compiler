@@ -71,6 +71,7 @@ export default class LatexCompilerPlugin extends Plugin {
 		//each one refreshes so for each new processor, the block would be rendered multiple times. 
 		// (that only hapens once on load, and the queue takes care of most of it)
 		for (const [language, definition] of Object.entries(LATEX_CODE_BLOCKS)) {
+			if (!definition.render) continue;
 			this.registerMarkdownCodeBlockProcessor(
 				language,
 				(source, el, ctx) =>
@@ -78,10 +79,13 @@ export default class LatexCompilerPlugin extends Plugin {
 						source,
 						el,
 						ctx,
+						language as keyof typeof LATEX_CODE_BLOCKS,
 						definition,
 					),
 			);
 		}
+		// this makes it so the code block doesn't disply in the preview
+		this.registerMarkdownCodeBlockProcessor("latex-file", () => {});
 	}
 
 	private addSyntaxHighlighting() {

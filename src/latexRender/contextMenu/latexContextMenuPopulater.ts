@@ -1,7 +1,7 @@
 import { Menu, Notice, TFile, Platform } from 'obsidian';
 import LatexCompilerPlugin from 'src/main';
 import { LogDisplayModal } from '../logs/logDisplayModal';
-import { LatexTask } from '../task/latexTask';
+import { LatexTask, LatexTaskPriority } from '../task/latexTask';
 import {
 	findTaskSectionInfoFromHashInFile,
 	TaskSectionInformation,
@@ -11,6 +11,7 @@ import ResultFileCache, { splitCacheId } from '../cache/resultFileCache';
 import { LATEX_RENDER_ID_KEY } from '../pdfConversion/pdfToSVG';
 import { ResultFileFormat, CompilePipeline } from 'src/settings/settings';
 import { LatexRenderChild } from '../task/latexRenderChild';
+import { getLatexCodeBlockDefinition, LatexCodeBlockLanguage } from '../codeBlockTypes';
 
 type RequireFunction = {
 	(moduleName: 'child_process'): {
@@ -77,6 +78,7 @@ export class LatexContextMenuPopulater {
 	 */
 	private readonly blockEl: HTMLElement;
 	private readonly renderChild: LatexRenderChild;
+	private readonly codeBlockLanguage: LatexCodeBlockLanguage;
 	private readonly output: RenderOutput;
 	private readonly compilePipeline: CompilePipeline;
 
@@ -91,13 +93,15 @@ export class LatexContextMenuPopulater {
 		menu: Menu,
 		renderChild: LatexRenderChild,
 		sourcePath: string,
-		compilePipeline: CompilePipeline,
+		codeBlockLanguage: LatexCodeBlockLanguage,
 	) {
 		this.plugin = plugin;
 		this.menu = menu;
 		this.sourcePath = sourcePath;
 		this.renderChild = renderChild;
-		this.compilePipeline = compilePipeline;
+		this.codeBlockLanguage = codeBlockLanguage;
+		this.compilePipeline = getLatexCodeBlockDefinition(this.codeBlockLanguage).compilePipeline;
+
 		this.resultFileCache = this.plugin.latexRenderer.cache.resultFileCache;
 
 		this.blockEl = findLatexContainer(this.renderChild.containerEl);
@@ -357,7 +361,7 @@ export class LatexContextMenuPopulater {
 		if (this.content !== undefined) return Promise.resolve(true);
 		if (!this.sourceAssignmentPromise) {
 			this.sourceAssignmentPromise = (async () => {
-				const info = await this.getSectionInfo();
+				const info = (await this.getSectionInfos())[0];
 				this.content = codeBlockToContent(info.codeBlock);
 				return true;
 			})();
@@ -374,12 +378,7 @@ export class LatexContextMenuPopulater {
 
 	async getTask(): Promise<LatexTask> {
 		await this.assignLatexContent();
-		const file = await this.getFile();
-		const sectionInfos = await findTaskSectionInfoFromHashInFile(file, this.rawHash, this.plugin.app);
-		if (!sectionInfos)
-			throw new Error(
-				'No section info found for hash: ' + this.rawHash + ' in file: ' + file.path,
-			);
+		const sectionInfos = await this.getSectionInfos();
 		const task = LatexTask.fromSectionInfos(
 			this.plugin,
 			this.sourcePath,
@@ -389,16 +388,19 @@ export class LatexContextMenuPopulater {
 		return task;
 	}
 
-	async getSectionInfo(): Promise<TaskSectionInformation> {
+	private async getSectionInfos(): Promise<TaskSectionInformation[]> {
 		const file = await this.getFile();
-		const sectionInfos = await findTaskSectionInfoFromHashInFile(file, this.rawHash, this.plugin.app);
+		const sectionInfos = await findTaskSectionInfoFromHashInFile(
+			file, 
+			this.rawHash, 
+			this.codeBlockLanguage, 
+			this.plugin.app
+		);
 		if (!sectionInfos)
 			throw new Error(
-				'No section info found for hash: ' + this.rawHash + ' in file: ' + file.path,
+				`No section info found for hash: ${this.rawHash} and language: ${this.codeBlockLanguage} in file: ${file.path}`,
 			);
-		const sectionInfo = sectionInfos[0];
-		this.content = codeBlockToContent(sectionInfo.codeBlock);
-		return sectionInfo;
+		return sectionInfos;
 	}
 
 	/**
@@ -424,10 +426,17 @@ export class LatexContextMenuPopulater {
 				console.error('Failed to remove result file from cache:', this.stem);
 			}
 		}
-		this.cleanBlockEl();
-		const task = await this.getTask();
-		this.plugin.latexRenderer.queue!.push(task);
-		new Notice('SVG removed from cache. Re-rendering...');
+		
+		try {
+			const task = await this.getTask();
+			this.cleanBlockEl();
+			this.plugin.latexRenderer.queue!.push(task, LatexTaskPriority.Regular);
+			new Notice('Result file removed from cache. Re-rendering...');
+		} catch(e) {
+			new Notice("Failed to re-render")
+			console.error("Failed to re-render", e)
+		}
+		
 	}
 
 	private async getProcessedTask(): Promise<LatexTask | undefined> {

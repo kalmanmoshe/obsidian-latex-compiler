@@ -1,9 +1,18 @@
 import { MarkdownRenderChild } from "obsidian";
+import LatexCompilerPlugin from "src/main";
 
 export class LatexRenderChild extends MarkdownRenderChild {
+	private readonly plugin: LatexCompilerPlugin;
+	private readonly sourcePath: string;
 	private objectUrl?: string;
 	private rendererDisposer?: () => void;
 	private unloaded = false;
+
+	constructor(containerEl: HTMLElement, plugin: LatexCompilerPlugin, sourcePath: string) {
+		super(containerEl);
+		this.plugin = plugin;
+		this.sourcePath = sourcePath;
+	}
 
 	get isUnloaded(): boolean {
 		return this.unloaded;
@@ -38,6 +47,7 @@ export class LatexRenderChild extends MarkdownRenderChild {
 			URL.revokeObjectURL(this.objectUrl);
 			this.objectUrl = undefined;
 		}
+		this.plugin.latexRenderer.cache.markCandidateForCleanup(this.sourcePath);
 
 		super.onunload();
 	}

@@ -15,8 +15,7 @@ import { sectionToTaskSectionInfo, taskSectionInfoToContent } from '../resolvers
 import { hashLatexContent } from '../cache/compilerCache';
 import { CompilePipeline, ResultFileFormat, SOURCE_REVERIFICATION_TIME_MS } from 'src/settings/settings';
 import { LatexRenderChild } from './latexRenderChild';
-import { getLatexCodeBlockDefinition, LatexCodeBlockDefinition } from '../codeBlockTypes';
-import { LatexSourceType } from 'src/latexRender/latexDependency';
+import { getLatexCodeBlockDefinition, LatexCodeBlockDefinition, LatexCodeBlockLanguage } from '../codeBlockTypes';
 import { getCacheId } from '../cache/resultFileCache';
 
 /**
@@ -36,7 +35,7 @@ async function mdSecInfosFromMdPostProcessorCtx(
 	if (sectionFromContext) {
 		return [sectionFromContext];
 	}
-	// i want to move the logger to the plugin thats why i have the err for now, as a reminder
+
 	let sectionInfos = await findMatchingCodeBlockSections(ctx.sourcePath, content, app);
 
 	if (!sectionInfos || sectionInfos.length === 0) {
@@ -62,13 +61,18 @@ export function getEditorTextForPath(path: string, app: App): string | undefined
 	return undefined;
 }
 
+// Lower numbers run first: 0 for export, 1 for regular rendering
+export enum LatexTaskPriority {
+	Regular = 1,
+	Export = 0,
+}
 
 export class LatexTask {
 	protected readonly plugin: LatexCompilerPlugin;
 	protected readonly content: string;
 	readonly sourcePath: string;
+	readonly codeBlockLanguage: LatexCodeBlockLanguage;
 	readonly definition: LatexCodeBlockDefinition;
-	readonly uuid = crypto.randomUUID();
 	readonly rawHash: string;
 	/**
 	 * The resolved hash is the hash of the content after it has been processed and the dependencies have been resolved.
@@ -89,6 +93,7 @@ export class LatexTask {
 
 	constructor(
 		plugin: LatexCompilerPlugin,
+		codeBlockLanguage: LatexCodeBlockLanguage,
 		definition: LatexCodeBlockDefinition,
 		source: string,
 		el: HTMLElement,
@@ -97,6 +102,7 @@ export class LatexTask {
 		sectionInfos: TaskSectionInformation[],
 	) {
 		this.plugin = plugin;
+		this.codeBlockLanguage = codeBlockLanguage;
 		this.definition = definition;
 		this.content = source;
 		this.rawHash = hashLatexContent(source);
@@ -107,8 +113,7 @@ export class LatexTask {
 	}
 
 	get compilePipeline(): CompilePipeline { return this.definition.compilePipeline; }
-	get sourceType(): LatexSourceType { return this.definition.sourceType; }
-	get resultFormat(): ResultFileFormat { return this.definition.resultFormat; }
+	get resultFormat(): ResultFileFormat { return this.definition.resultFormat!; }
 
 	hasSourceChangeTimeExceededMargin() {
 		return (
@@ -169,16 +174,12 @@ export class LatexTask {
 
 	/**
 	 * this method creates a LatexTask from a section information object. it creates a temp div element to hold the task.
-	 * @param plugin
-	 * @param path
-	 * @param sectionInfo
-	 * @returns
 	 */
 	static fromSectionInfos(
 		plugin: LatexCompilerPlugin,
 		path: string,
 		sectionInfos: TaskSectionInformation[],
-		renderTarget?: HTMLElement | LatexRenderChild,
+		renderTarget?: HTMLElement | LatexRenderChild
 	): LatexTask {
 		if (sectionInfos.length === 0) {
 			throw new Error('No section information provided for creating a task.');
@@ -191,7 +192,8 @@ export class LatexTask {
 		}
 		const content = contents[0];
 		const metadatas = sectionInfos.map((sec) => extractCodeBlockMetadata(sec.codeBlock));
-		if (!metadatas.every((meta) => meta.language === metadatas[0].language)) {
+		const language = metadatas[0].language ?? '';
+		if (!metadatas.every((meta) => meta.language === language)) {
 			throw new Error(
 				'All section metadata languages must be the same for creating a task from multiple sections.',
 			);
@@ -206,11 +208,12 @@ export class LatexTask {
 		} else {
 			containerEl = renderTarget ?? activeDocument.createElement('div');
 		}
-
-		const definition = getLatexCodeBlockDefinition(metadatas[0].language ?? '');
+		
+		const definition = getLatexCodeBlockDefinition(language);
 
 		return new LatexTask(
 			plugin,
+			language as LatexCodeBlockLanguage,
 			definition,
 			content,
 			containerEl,
@@ -222,6 +225,7 @@ export class LatexTask {
 
 	static async createAsync(
 		plugin: LatexCompilerPlugin,
+		codeBlockLanguage: LatexCodeBlockLanguage,
 		definition: LatexCodeBlockDefinition,
 		content: string,
 		el: HTMLElement,
@@ -230,9 +234,9 @@ export class LatexTask {
 		try {
 			const mdSectionInfos = await mdSecInfosFromMdPostProcessorCtx(ctx, el, content, plugin.app);
 			const infos = mdSectionInfos.map((sec) => sectionToTaskSectionInfo(sec));
-			const rendererChild = new LatexRenderChild(el);
+			const rendererChild = new LatexRenderChild(el, plugin, ctx.sourcePath);
 			ctx.addChild(rendererChild);
-			const task = new LatexTask(plugin, definition, content, el, rendererChild, ctx.sourcePath, infos);
+			const task = new LatexTask(plugin, codeBlockLanguage, definition, content, el, rendererChild, ctx.sourcePath, infos);
 			return { isError: false, result: task };
 		} catch (err: unknown) {
 			console.error('Error while ensuring section info for task:', err);
@@ -305,7 +309,7 @@ export class LatexTask {
 	}
 
 	async process() {
-		if (this.definition.sourceType !== LatexSourceType.TikzCodeBlock) {
+		if (this.definition.compilePipeline !== CompilePipeline.Process) {
 			//fake it till you make it.
 			this.setProcessedContent(this.getContent());
 			this.processed = true;
@@ -315,7 +319,7 @@ export class LatexTask {
 		const result = await this.plugin.latexRenderer.preprocessor.process(
 			this.getContent(),
 			this.sourcePath,
-			this.definition.sourceType
+			this.definition.compilePipeline
 		)
 		this.setProcessedContent(result);
 

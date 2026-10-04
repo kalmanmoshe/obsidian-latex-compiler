@@ -2,13 +2,13 @@ import LatexCompilerPlugin from 'src/main';
 import { Menu, MarkdownView } from 'obsidian';
 import { LatexContextMenuPopulater } from './latexContextMenuPopulater';
 import { LatexRenderChild } from '../task/latexRenderChild';
-import { CompilePipeline } from 'src/settings/settings';
+import { LatexCodeBlockLanguage } from '../codeBlockTypes';
 
 type Pending = {
 	id: number;
 	renderChild: LatexRenderChild
 	filePath: string;
-	pipeline: CompilePipeline;
+	codeBlockLanguage: LatexCodeBlockLanguage
 	event: MouseEvent;
 	deadline: number;
 	timeoutId: number;
@@ -45,13 +45,13 @@ export class LatexContextMenuDecider {
 					menu, 
 					best.renderChild, 
 					best.filePath, 
-					best.pipeline
+					best.codeBlockLanguage
 				)
 			}),
 		);
 	}
 
-	add(renderChild: LatexRenderChild, filePath: string, compilePipeline: CompilePipeline): void {
+	add(renderChild: LatexRenderChild, filePath: string, codeBlockLanguage: LatexCodeBlockLanguage): void {
 		this.plugin.registerDomEvent(
 			renderChild.containerEl,
 			'contextmenu',
@@ -78,7 +78,7 @@ export class LatexContextMenuDecider {
 					id,
 					renderChild,
 					filePath,
-					pipeline: compilePipeline,
+					codeBlockLanguage,
 					event,
 					deadline,
 					handled: false,
@@ -94,7 +94,7 @@ export class LatexContextMenuDecider {
 						event, 
 						pending.renderChild, 
 						pending.filePath,
-						pending.pipeline
+						pending.codeBlockLanguage
 					);
 				}, this.windowMs);
 
@@ -108,7 +108,7 @@ export class LatexContextMenuDecider {
 		event: MouseEvent,
 		renderChild: LatexRenderChild,
 		filePath: string,
-		compilePipeline: CompilePipeline
+		codeBlockLanguage: LatexCodeBlockLanguage
 	): void {
 		try {
 			const menu = new Menu();
@@ -118,7 +118,7 @@ export class LatexContextMenuDecider {
 				menu, 
 				renderChild, 
 				filePath, 
-				compilePipeline
+				codeBlockLanguage
 			);
 
 			menu.showAtMouseEvent(event);

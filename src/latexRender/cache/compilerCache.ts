@@ -122,6 +122,10 @@ export default class CompilerCache {
 		return this.texLiveCache.removeAllCachedPackages();
 	}
 
+	markCandidateForCleanup(sourcePath: string) {
+		this.resultFileCache.markCandidateForCleanup(sourcePath);
+	}
+
 	/**
 	 * Unloads the cache and flushes the compiler cache.
 	 */

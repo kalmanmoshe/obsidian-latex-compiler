@@ -47,21 +47,33 @@
 	height: fit-content;
 }
 
-/* DOWNscale: center using flex */
+.latex-compiler-render.latex-compiler-overflow-fit {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    overflow: hidden;
+}
+
+.latex-compiler-render.latex-compiler-overflow-fit svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
 .latex-compiler-render.latex-compiler-overflow-downscale {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	width: 100%;
-	overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    overflow: hidden;
 }
 
 .latex-compiler-render.latex-compiler-overflow-downscale svg {
-	width: auto;
-	height: auto;
-	max-width: 100%;
-	object-fit: contain;
-	display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    display: block;
 }
 
 .latex-compiler-render.latex-compiler-overflow-scroll {
@@ -80,7 +92,6 @@
 	vertical-align: middle;
 }
 
-/* HIDDEN: just let it overflow */
 .latex-compiler-render.latex-compiler-overflow-hidden {
 	display: flex;
 	justify-content: center;
@@ -101,7 +112,6 @@
 	flex-shrink: 0;
 }
 
-/* --- */
 /* Shared by the desktop <object> and Android PDF.js render */
 .latex-pdf-wrapper {
 	position: relative;

@@ -190,9 +190,9 @@ export class LatexRenderCompilationSession implements LatexCompilationSession {
         const resolvedPath = resolvePathRelToVault(filePath, basePath, this.renderer.plugin.app);
         const { extension } = extractStemAndExtension(resolvedPath);
 
-        const { content, sourceType } = await resolveDependencyContent(resolvedPath, this.renderer.plugin.app);
+        const { content, compilePipeline } = await resolveDependencyContent(resolvedPath, this.renderer.plugin.app);
 
-        return createDependency(content, resolvedPath, sourceType, isTexSourceExtension(extension));
+        return createDependency(content, resolvedPath, compilePipeline, isTexSourceExtension(extension));
     }
 
     private getVirtualPath(dep: LatexDependency): string {

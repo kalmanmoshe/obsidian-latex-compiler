@@ -12,7 +12,7 @@ export enum CompilePipeline {
 	Process = 'process',
 }
 
-export type OverflowStrategy = 'downscale' | 'scroll' | 'hidden';
+export type OverflowStrategy = 'fit' | 'downscale' | 'scroll' | 'hidden';
 export type ResultFileFormat = 'svg' | 'pdf';
 
 /**
@@ -56,7 +56,7 @@ export interface TexLiveCacheIndex {
 export interface LatexCompilerPluginSettings {
 	virtualFilesFromCodeBlocks: boolean;
 
-	invertColorsInDarkMode: boolean;
+	adaptSVGColorsToTheme: boolean;
 
 	package_url: string;
 	physicalCache: boolean;
@@ -80,14 +80,14 @@ export interface LatexCompilerPluginSettings {
 export const DEFAULT_SETTINGS: LatexCompilerPluginSettings = {
 	virtualFilesFromCodeBlocks: false,
 	// style settings
-	invertColorsInDarkMode: true,
+	adaptSVGColorsToTheme: true,
 	//its the public mirror of `https://texlive2.swiftlatex.com/` (which is down and not maintained any more) maintained by Texlyre
 	package_url: 'https://texlive.texlyre.org/',
 	physicalCache: true,
 	physicalCacheLocation: '',
 	resultCacheIndex: {},
 	texLiveCacheIndex: [{}, {}, {}, {}],
-	overflowStrategy: "scroll",
+	overflowStrategy: "fit",
 	compiler: CompilerType.PdfTeX,
 
 	experimentalSmartPreprocessing: false,

@@ -1,12 +1,12 @@
 import { App, normalizePath, TAbstractFile, TFile, TFolder } from 'obsidian';
 import { getLatexTaskSectionInfosFromFile } from './taskSectionInformation';
-import { extractCodeBlockMetadata, extractCodeBlockName } from './latexSourceFromFile';
+import { extractCodeBlockName } from './latexSourceFromFile';
 import { codeBlockToContent } from 'obsidian-dev-utils';
-import { LatexSourceType } from 'src/latexRender/latexDependency';
 import { getLatexCodeBlockDefinition } from '../codeBlockTypes';
 import { isTexSourceExtension } from 'src/latexPreprocessor/ast/latexAbstractSyntaxTree';
 import { UserFacingPluginError } from '../errors/pluginErrors';
 import { TEXT_EXTENSIONS } from './extensions';
+import { CompilePipeline } from 'src/settings/settings';
 
 export const CODE_BLOCK_NAME_SEPARATOR = '::';
 const TRADITIONAL_PATH_SEPARATORS = ['/', '\\'];
@@ -42,7 +42,7 @@ export function resolvePathRelToVault(path: string, currentPath: string, app: Ap
 	return absPath + CODE_BLOCK_NAME_SEPARATOR + codeBlockName;
 }
 
-export async function resolveDependencyContent(path: string, app: App): Promise<{ content: string | Uint8Array, sourceType: LatexSourceType }> {
+export async function resolveDependencyContent(path: string, app: App): Promise<{ content: string | Uint8Array, compilePipeline: CompilePipeline }> {
 	const parts = path.split(CODE_BLOCK_NAME_SEPARATOR);
 	if (parts.length > 2 || parts.length === 0) {
 		throw new UserFacingPluginError(
@@ -66,7 +66,7 @@ export async function resolveDependencyContent(path: string, app: App): Promise<
 	const fileContent = shouldReadAsText ? await app.vault.read(file) : new Uint8Array(await app.vault.readBinary(file));
 	if (parts.length === 0) return {
 		content: fileContent,
-		sourceType: LatexSourceType.File
+		compilePipeline: CompilePipeline.Plain
 	};
 
 	const codeBlockStem = extractStemAndExtension(parts.shift()!).stem;
@@ -91,10 +91,9 @@ export async function resolveDependencyContent(path: string, app: App): Promise<
 		);
 	}
 
-	const language = extractCodeBlockMetadata(target.codeBlock).language ?? "";
 	return {
 		content: codeBlockToContent(target.codeBlock),
-		sourceType: getLatexCodeBlockDefinition(language).sourceType,
+		compilePipeline: getLatexCodeBlockDefinition(target.language).compilePipeline,
 	};
 }
 
