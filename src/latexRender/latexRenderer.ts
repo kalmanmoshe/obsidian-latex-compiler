@@ -102,6 +102,7 @@ export class LatexRenderer {
 	}
 
 	private async loadCompiler() {
+		if (!this.isCompilerEnabled()) return;
 		if (this.plugin.settings.compiler === CompilerType.PdfTeX) {
 			this.compiler = new PdfTeXCompiler();
 		} else {
@@ -115,6 +116,7 @@ export class LatexRenderer {
 
 	async restartCompiler() {
 		this.stopCompiler();
+		if (!this.isCompilerEnabled()) return;
 		await this.startCompiler();
 	}
 

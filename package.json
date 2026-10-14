@@ -1,6 +1,6 @@
 {
   "name": "latex-render",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -37,7 +37,7 @@
     "@typescript-eslint/eslint-plugin": "^8.62.0",
     "@typescript-eslint/parser": "^8.62.0",
     "builtin-modules": "3.3.0",
-    "esbuild": "^0.24.2",
+    "esbuild": "^0.28.2",
     "esbuild-plugin-inline-worker": "^0.1.1",
     "esbuild-plugin-wasm": "^1.1.0",
     "eslint": "^9.39.4",

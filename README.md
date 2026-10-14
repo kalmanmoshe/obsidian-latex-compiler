@@ -18,6 +18,7 @@ The plugin includes two LaTeX engines, pdfTeX and XeTeX. It downloads TeX Live p
     </td>
   </tr>
 </table>
+
 ## Features
 ### Write complete LaTeX documents.
 

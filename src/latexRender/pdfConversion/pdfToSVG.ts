@@ -65,6 +65,8 @@ function prefixSvgIds(svgString: string, prefix: string): string {
 		return svgString;
 	}
 
+    prefix = crypto.randomUUID().slice(0, 8) + '__' + prefix;
+
     const idMap = new Map<string, string>();
 
     // Rename every ID.

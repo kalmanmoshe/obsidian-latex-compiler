@@ -585,6 +585,16 @@ export function getCacheId(
 	return `${rawHash}-${getContextHash(sourcePath, pipeline)}`;
 }
 
+/*
+	The engine is intentionally omitted from the cache id because it does not
+	materially change the compiled result in this flow - the main effect is
+	whether a block compiles at all. We avoid duplicating cache entries per
+	engine for now; it can be added later if needed.
+
+	Post-processing steps are also omitted because they operate on the same
+	compiled input and only alter it at runtime. For a persistent cache there
+	is no need to track those steps, since they all start from the same base output.
+*/
 function getContextHash(sourcePath: string, pipeline: CompilePipeline): string {
 	return hashContent(
 		JSON.stringify([

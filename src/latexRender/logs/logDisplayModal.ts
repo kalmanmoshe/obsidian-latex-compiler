@@ -152,7 +152,7 @@ export class LogDisplayModal extends Modal {
 		header.createSpan({
 			text: `${uniqueFileCount} unique ${
 				uniqueFileCount === 1 ? 'file' : 'files'
-			} loaded during compilation`,
+			} were logged during compilation`,
 			cls: 'latex-compiler-dependencies-description',
 		});
 
