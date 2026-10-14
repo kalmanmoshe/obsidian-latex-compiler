@@ -1,3 +1,5 @@
 {
-  "1.0.0-beta": "https://github.com/kalmanmoshe/Doing-it-myself.git"
+	"1.0.0-beta": "https://github.com/kalmanmoshe/Doing-it-myself.git",
+	"0.2.0": "0.17.0",
+	"1.0.0": "0.17.0"
 }
