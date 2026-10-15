@@ -84,16 +84,19 @@ export class LatexRenderQueue {
 	}
 
 	configQueue() {
-		this.queue = async.priorityQueue((task: LatexTask) => {
-			this.renderTask(task).catch((err) => {
+		this.queue = async.priorityQueue((task: LatexTask, cb: (err?: Error) => void) => {
+			void this.renderTask(task)
+				.catch((err: unknown) => {
 					console.error(
-					'Queue worker crashed:',
-					err,
-					task.getDebugInfo(),
-				);
-			}).finally(() => {
-				updateQueueCountdown(this.queue);
-			});
+						'Queue worker crashed:',
+						err,
+						task.getDebugInfo(),
+					);
+				})
+				.finally(() => {
+					cb();
+					updateQueueCountdown(this.queue);
+				});
 		}, 1) as PriorityQueueObject<LatexTask>; // Concurrency is set to 1, so tasks run one at a time
 	}
 }
