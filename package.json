@@ -1,7 +1,7 @@
 {
   "name": "latex-render",
   "version": "1.0.0",
-  "description": "",
+  "description": "Compile LaTeX directly within Obsidian code blocks to PDF or SVG, and include vault files. No separate LaTeX installation required.",
   "main": "main.js",
   "scripts": {
     "format": "prettier --write \"src/**/*.{ts,jsx,tsx,json,css,md,yml,yaml,html}\"",
@@ -23,7 +23,7 @@
     "push:android": "powershell -ExecutionPolicy Bypass -File ./scripts/push-android.ps1"
   },
   "keywords": [],
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "devDependencies": {
     "@codemirror/view": "^6.38.6",
     "@microsoft/eslint-plugin-sdl": "^1.1.0",
