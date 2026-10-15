@@ -430,7 +430,7 @@ export class LatexContextMenuPopulater {
 		try {
 			const task = await this.getTask();
 			this.cleanBlockEl();
-			this.plugin.latexRenderer.queue!.push(task, LatexTaskPriority.Regular);
+			void this.plugin.latexRenderer.queue!.push(task, LatexTaskPriority.Regular);
 			new Notice('Result file removed from cache. Re-rendering...');
 		} catch(e) {
 			new Notice("Failed to re-render")

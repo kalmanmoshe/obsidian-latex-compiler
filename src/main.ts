@@ -1,4 +1,4 @@
-import { Plugin, Notice } from 'obsidian';
+import { Plugin, Notice, PluginManifest } from 'obsidian';
 import { LatexCompilerPluginSettings, DEFAULT_SETTINGS, DEFAULT_LOCAL_STORAGE_SETTINGS, LocalStorageSettings, LOCAL_STORAGE_KEY } from './settings/settings';
 import { LatexCompilerSettingTab } from './settings/settingsTab';
 import { getEditorCommands } from './obsidian/editorCommands';
@@ -26,22 +26,13 @@ export default class LatexCompilerPlugin extends Plugin {
 	private cacheDir: string;
 
 	async onload() {
-		const startTime = performance.now();
-		console.log('Loading Latex Compiler plugin');
 		this.menuDecider = new LatexContextMenuDecider(this);
 
 		await this.loadSettings();
 
 		this.addSyntaxHighlighting();
-		this.app.workspace.onLayoutReady(async () => {
-			const onStart = performance.now();
-			await this.loadLayoutReadyDependencies();
-			console.warn(
-				'Latex Compiler Plugin layout ready in ' + (performance.now() - onStart) + 'ms',
-			);
-		});
+		this.app.workspace.onLayoutReady(() => void this.loadLayoutReadyDependencies());
 		this.addSettingTab(new LatexCompilerSettingTab(this));
-		console.warn('Latex Compiler Plugin loaded in ' + (performance.now() - startTime) + 'ms');
 	}
 
 	onunload() {
@@ -215,7 +206,7 @@ export default class LatexCompilerPlugin extends Plugin {
 				`${dir}/manifest.json`,
 			);
 
-			const manifest = JSON.parse(raw);
+			const manifest = JSON.parse(raw) as PluginManifest;
 
 			return manifest.id === this.manifest.id;
 		} catch {

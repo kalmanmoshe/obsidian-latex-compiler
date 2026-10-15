@@ -231,8 +231,6 @@ export class LatexRenderer {
 			return false;
 		}
 
-		console.log('Rendering task:', task.getDebugInfo());
-
 		await this.renderLatexToElement(task);
 		await this.reCheckQueue(); // only re-check the queue after a valide rendering
 		return true;
@@ -412,15 +410,12 @@ export class LatexRenderer {
 		config: { fetchPkgData?: boolean; cacheId?: string } = {},
 	): Promise<{ result: CompileResult; compilationSession: LatexRenderCompilationSession }> {
 		await this.compiler!.waitUntilReady();
-		const time = performance.now();
 		await this.compiler!.flushWorkCache();
 		await this.compiler!.writeMemFSFile('main.tex', source);
 		await this.compiler!.setEngineMainFile(0, 'main.tex');
 
 		const compilationSession = new LatexRenderCompilationSession(this, sourcePath);
 		const result = await this.compiler!.compileLaTeX(compilationSession);
-
-		console.log('Compilation result:', result, "at", performance.now() - time, "ms");
 
 		if (config.cacheId) {
 			this.cache.addLog(config.cacheId, result.log, compilationSession);

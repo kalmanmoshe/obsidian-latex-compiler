@@ -1,3 +1,9 @@
+/* eslint-disable
+  @typescript-eslint/no-unsafe-assignment,
+  @typescript-eslint/no-unsafe-call,
+  @typescript-eslint/no-unsafe-member-access,
+  @typescript-eslint/no-redundant-type-constituents
+*/
 import { PDFDocument } from 'pdf-lib';
 import LatexCompilerPlugin from 'src/main';
 import { LATEX_RENDER_ID_KEY } from './pdfToSVG';
@@ -67,7 +73,7 @@ async function openPdfJs(
 	pdfData: Uint8Array,
 	doc: Document,
 ): Promise<{ loadingTask: LoadingTask; pdf: Pdf }> {
-	const pdfjsLib = await loadPdfJs();
+	const pdfjsLib: any = await loadPdfJs();
 
 	const loadingTask = pdfjsLib.getDocument({
 		// PDF.js may transfer its input. Preserve the cache's Uint8Array.
@@ -196,8 +202,6 @@ export async function insertPdfForExport(
 			});
 
 			canvas.style.width = `${viewport.width}px`;
-			canvas.style.height = 'auto';
-			canvas.style.maxWidth = '100%';
 
 			if (renderChild.isUnloaded) {
 				canvas.width = 0;

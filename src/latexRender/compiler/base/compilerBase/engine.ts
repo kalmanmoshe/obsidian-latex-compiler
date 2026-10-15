@@ -193,7 +193,6 @@ export default class LatexEngine {
 		});
 		const formatURL = URL.createObjectURL(formatBlob);
 		window.setTimeout(() => URL.revokeObjectURL(formatURL), 30000);
-		console.log(`Engine ${this.engineName} download format file via ` + formatURL);
 	}
 
 	async fetchCacheData() {

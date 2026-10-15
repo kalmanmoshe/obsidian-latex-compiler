@@ -50,6 +50,7 @@ class BenchmarkCurrentFileTest {
         private readonly iterations: number = 5,
     ) {
         this.modal = new Modal(this.plugin.app);
+        // eslint-disable-next-line obsidianmd/no-static-styles-assignment
         this.modal.contentEl.style.whiteSpace = 'pre-wrap';
     }
 

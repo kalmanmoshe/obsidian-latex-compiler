@@ -49,7 +49,7 @@ async function renderAllUnrenderedCodeBlocks(plugin: LatexCompilerPlugin) {
 	for (const { file, codeBlockSections } of sectionInfosByFile) {
 		for (const codeBlock of codeBlockSections) {
 			const task = LatexTask.fromSectionInfos(plugin, file.path, [codeBlock]);
-			plugin.latexRenderer.queue.push(task, LatexTaskPriority.Regular);
+			void plugin.latexRenderer.queue.push(task, LatexTaskPriority.Regular);
 			count++;
 		}
 	}

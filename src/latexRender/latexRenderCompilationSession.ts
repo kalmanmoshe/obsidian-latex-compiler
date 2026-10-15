@@ -93,8 +93,8 @@ export class LatexRenderCompilationSession implements LatexCompilationSession {
 
         const result = await this.resolveFile({
             requestedPath: String(message.requestedPath),
-            requestingPath: message.requestingPath
-                ? String(message.requestingPath)
+            requestingPath: typeof message.requestingPath === "string"
+                ? message.requestingPath
                 : undefined,
             format: Number(message.format)
         });
