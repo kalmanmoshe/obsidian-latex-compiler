@@ -19,6 +19,10 @@ The plugin includes two LaTeX engines, pdfTeX and XeTeX. It downloads TeX Live p
   </tr>
 </table>
 
+## Disclosures
+
+**Network use:** The plugin connects to [texlive.texlyre.org](https://texlive.texlyre.org/), a third-party TeX Live mirror maintained by Texlyre, to download TeX files needed for compilation that are not already cached. Downloaded files are cached locally for future offline use. Internet access is required for uncached downloads.
+
 ## Features
 ### Write complete LaTeX documents.
 
