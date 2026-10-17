@@ -73,7 +73,6 @@ export default defineConfig(
           ignoreRestSiblings: true,
         },
       ],
-      "@typescript-eslint/ban-ts-comment": "off",
       "@typescript-eslint/no-unsafe-argument": "warn",
       "@typescript-eslint/no-empty-function": "off",
       

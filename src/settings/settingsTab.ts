@@ -95,8 +95,11 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Compiler')
 			.setDesc(
-				// eslint-disable-next-line obsidianmd/ui/sentence-case
-				"Choose the LaTeX compiler for rendering diagrams. \"PdfTeX\" is the classic engine, while \"XeTeX\" offers better Unicode and modern font support. Changing this may affect compatibility and output."
+				"Choose the LaTeX compiler for rendering diagrams. " +
+				"\"PdfTeX\"" +
+				" is the classic engine, while " +
+				"\"XeTeX\"" +
+				" offers better Unicode and modern font support. Changing this may affect compatibility and output."
 			)
 			.addDropdown(dropdown => dropdown
 				.addOptions({

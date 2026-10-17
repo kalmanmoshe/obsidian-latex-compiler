@@ -1,5 +1,6 @@
-import { decompressGzipText } from 'src/util/decompressPayload';
+import { decompressGzipBytes } from 'src/util/decompressPayload';
 import { pdfToSvgWasmGzipBase64 } from '../../generated/pdfToSvgWasm.payload';
+import createPdfToSvgModule from '../../generated/pdfToSvgRuntime';
 
 type PdfToSvgFactory = () => Promise<PdfToSvgModule>;
 
@@ -20,58 +21,14 @@ export interface PdfToSvgModule {
 	_convertPdfToSvg(): number;
 }
 
-let pdfToSvgFactoryPromise: Promise<PdfToSvgFactory> | undefined;
-
-async function decompressPdfToSvgFactory(): Promise<PdfToSvgFactory> {
-	const source = await decompressGzipText(pdfToSvgWasmGzipBase64);
-
-	return evaluateCommonJsModule(source);
-}
-
-function loadPdfToSvgFactoryPromise(): Promise<PdfToSvgFactory> {
-	pdfToSvgFactoryPromise ??= decompressPdfToSvgFactory().catch((error) => {
-		pdfToSvgFactoryPromise = undefined;
-		throw error;
-	});
-
-	return pdfToSvgFactoryPromise;
-}
-
-function evaluateCommonJsModule(source: string): PdfToSvgFactory {
-	const module: { exports: unknown } = {
-		exports: {},
-	};
-
-	const requireUnavailable = (moduleName: string): never => {
-		throw new Error(`Compressed pdfToSvgWasm tried to require "${moduleName}".`);
-	};
-
-	// The source is generated and bundled with the plugin, not user-controlled.
-	// Runtime evaluation is required to load the compressed CommonJS wrapper.
-	// TODO: maby compress only the wasm binary and load the wrapper from a separate file instead of compressing the entire wrapper.
-	// eslint-disable-next-line @typescript-eslint/no-implied-eval -- Load the trusted, bundled Emscripten wrapper after decompression.
-	const execute = new Function(
-		'exports',
-		'module',
-		'require',
-		`${source}\nreturn module.exports;`,
-	) as (
-		module: { exports: unknown },
-		exports: unknown,
-		require: (moduleName: string) => never,
-	) => unknown;
-
-	const exportedValue = execute(module, module.exports, requireUnavailable);
-
-	if (typeof exportedValue !== 'function') {
-		throw new TypeError('pdfToSvgWasm did not export an Emscripten module factory.');
-	}
-
-	return exportedValue as PdfToSvgFactory;
-}
+let wasmBytesPromise: Promise<Uint8Array> | undefined;
 
 const PdfToSvgWasm: PdfToSvgFactory = async () => {
-	return (await loadPdfToSvgFactoryPromise())();
+	wasmBytesPromise ??= decompressGzipBytes(pdfToSvgWasmGzipBase64).catch((error: unknown) => {
+		wasmBytesPromise = undefined;
+		throw error;
+	});
+	return createPdfToSvgModule({ wasmBinary: await wasmBytesPromise });
 };
 
 export default PdfToSvgWasm;

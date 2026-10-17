@@ -1,9 +1,3 @@
-/* eslint-disable
-  @typescript-eslint/no-unsafe-assignment,
-  @typescript-eslint/no-unsafe-call,
-  @typescript-eslint/no-unsafe-member-access,
-  @typescript-eslint/no-redundant-type-constituents -- Obsidian exposes loadPdfJs as Promise<any>, so its PDF.js API lacks static types.
-*/
 import { PDFDocument } from 'pdf-lib';
 import LatexCompilerPlugin from 'src/main';
 import { LATEX_RENDER_ID_KEY } from './pdfToSVG';
@@ -11,7 +5,7 @@ import { loadPdfJs, setIcon } from 'obsidian';
 import { LatexRenderChild } from '../task/latexRenderChild';
 import { LatexCodeBlockLanguage } from '../codeBlockTypes';
 
-type PdfJs = Awaited<ReturnType<typeof loadPdfJs>>;
+import type { PdfJs } from 'src/types/pdfjs';
 type LoadingTask = ReturnType<PdfJs['getDocument']>;
 type Pdf = Awaited<LoadingTask['promise']>;
 type PdfPage = Awaited<ReturnType<Pdf['getPage']>>;
@@ -73,7 +67,7 @@ async function openPdfJs(
 	pdfData: Uint8Array,
 	doc: Document,
 ): Promise<{ loadingTask: LoadingTask; pdf: Pdf }> {
-	const pdfjsLib = await loadPdfJs();
+	const pdfjsLib = (await loadPdfJs()) as PdfJs;
 
 	const loadingTask = pdfjsLib.getDocument({
 		// PDF.js may transfer its input. Preserve the cache's Uint8Array.
@@ -255,7 +249,7 @@ export async function insertPdfWithPdfJs(
 			? pdf.destroy()
 			: loadingTask.destroy();
 
-		return destroyPromise!;
+		return destroyPromise;
 	};
 
 	renderChild.setRendererDisposer(() => {
@@ -271,7 +265,7 @@ export async function insertPdfWithPdfJs(
 	});
 
 	try {
-		const pdfjsLib = await loadPdfJs();
+		const pdfjsLib = (await loadPdfJs()) as PdfJs;
 		if (disposed) return;
 
 		loadingTask = pdfjsLib.getDocument({
@@ -413,5 +407,3 @@ async function getPdfDimensions(pdf: Uint8Array): Promise<{ width: number; heigh
 	const { width, height } = firstPage.getSize();
 	return { width, height };
 }
-
-/* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-redundant-type-constituents */
