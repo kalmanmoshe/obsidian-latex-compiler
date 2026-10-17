@@ -71,7 +71,7 @@ export abstract class CacheBase {
 		return getFileReadType(fileName);
 	}
 
-	isValidFileName(fileName: any) {
+	isValidFileName(fileName: unknown) {
 		if (
 			!fileName ||
 			typeof fileName !== 'string' ||
@@ -86,7 +86,7 @@ export abstract class CacheBase {
 		);
 	}
 
-	isValidFileExtension(extension: any) {
+	isValidFileExtension(extension: unknown) {
 		if (
 			!extension ||
 			typeof extension !== 'string' ||

@@ -26,23 +26,13 @@ export function errorMessageDiv(
 		triggeringPackage,
 	} = info;
 
-	const container = Object.assign(
-		activeDocument.createElement('div'),
-		{
-			className:
-				'latex-compiler-error-container ' +
-				`level-${level}`,
-		},
-	);
+	const container = activeDocument.createDocumentFragment().createDiv({
+		cls: ['latex-compiler-error-container', `level-${level}`],
+	});
 
-	const content = Object.assign(
-		activeDocument.createElement('div'),
-		{
-			className: 'latex-compiler-error-content',
-		},
-	);
-
-	container.appendChild(content);
+	const content = container.createDiv({
+		cls: 'latex-compiler-error-content',
+	});
 
 	const errorDetails = [
 		['latex-compiler-error-title', title],
@@ -66,15 +56,7 @@ export function errorMessageDiv(
 	for (const [className, textContent] of errorDetails) {
 		if (!textContent) continue;
 
-		content.appendChild(
-			Object.assign(
-				activeDocument.createElement('div'),
-				{
-					className,
-					textContent,
-				},
-			),
-		);
+		content.createDiv({ cls: className, text: textContent });
 	}
 
 	return container;

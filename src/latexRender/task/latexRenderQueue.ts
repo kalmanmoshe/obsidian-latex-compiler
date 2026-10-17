@@ -115,19 +115,17 @@ const updateQueueCountdown = (queue: PriorityQueueObject<LatexTask>) => {
 };
 
 function createWaitingCountdown(index: number) {
-	const parentContainer = Object.assign(activeDocument.createElement('div'), {
-		className: 'latex-compiler-loader-parent-container',
+	const parentContainer = activeDocument.createDocumentFragment().createDiv({
+		cls: 'latex-compiler-loader-parent-container',
 	});
 
-	const loader = Object.assign(activeDocument.createElement('div'), {
-		className: 'latex-compiler-loader',
+	parentContainer.createDiv({
+		cls: 'latex-compiler-loader',
 	});
 
-	const countdown = Object.assign(activeDocument.createElement('div'), {
-		className: 'latex-compiler-countdown',
-		textContent: index.toString(),
+	parentContainer.createDiv({
+		cls: 'latex-compiler-countdown',
+		text: index.toString(),
 	});
-	parentContainer.appendChild(loader);
-	parentContainer.appendChild(countdown);
 	return parentContainer;
 }

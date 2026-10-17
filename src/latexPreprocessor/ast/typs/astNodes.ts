@@ -4,7 +4,7 @@ import { EnvRenderInfo, RenderInfo } from './info-specs';
 export type GenericAst = GenericNode | GenericNode[];
 
 export interface GenericNode {
-	[x: string]: any;
+	[x: string]: unknown;
 	type: string;
 	renderInfo?: object;
 }
@@ -135,7 +135,7 @@ export abstract class ContentNode extends BaseNode {
 	}
 
 	clone(): this {
-		const clone = new (this.constructor as new (...args: any[]) => this)(
+		const clone = new (this.constructor as new (...args: unknown[]) => this)(
 			this.content.map((node) => node.clone()),
 			this.renderInfo,
 			clonePosition(this.position),
@@ -539,7 +539,7 @@ export class Argument extends ContentNode {
 	}
 
 	clone(): this {
-		const clone = new (this.constructor as new (...args: any[]) => this)(
+		const clone = new (this.constructor as new (...args: unknown[]) => this)(
 			this.openMark,
 			this.closeMark,
 			this.content.map((node) => node.clone()),

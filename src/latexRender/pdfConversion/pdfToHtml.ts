@@ -73,7 +73,7 @@ async function openPdfJs(
 	pdfData: Uint8Array,
 	doc: Document,
 ): Promise<{ loadingTask: LoadingTask; pdf: Pdf }> {
-	const pdfjsLib: any = await loadPdfJs();
+	const pdfjsLib = await loadPdfJs();
 
 	const loadingTask = pdfjsLib.getDocument({
 		// PDF.js may transfer its input. Preserve the cache's Uint8Array.

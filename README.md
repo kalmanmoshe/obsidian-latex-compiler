@@ -177,12 +177,7 @@ To rebuild the compiler and rendering components as well as the plugin itself:
 	src/latexRender/pdfConversion/pdfToSvgWasm.js
 	```
 	with the newly generated `pdfToSvgWasm.js`.
-8. Regenerate the compressed payloads:
-	```bash
-	npm run generate:payloads
-	```
-	This is required again after rebuilding `pdfToSvgWasm.js` so the newly generated PDF-to-SVG WASM is compressed and included alongside the compiler payloads.
-9. Build and bundle the plugin:
+8. Build and bundle the plugin:
 	```bash
 	npm run build
 	```
@@ -197,13 +192,14 @@ If you do not need to rebuild SwiftLaTeX or the PDF-to-SVG runtime from source:
 	```bash
 	npm install
 	```
-3. Generate the compressed payloads from the compiler and PDF-to-SVG files already included in the repository:
-	```bash
-	npm run generate:payloads
-	```
-4. Build and bundle the plugin:
+3. Build and bundle the plugin:
 	```bash
 	npm run build
 	```
 	The final plugin bundle is written to `main.js`.
 
+## Acknowledgements
+
+This plugin is based on [obsidian-latex-render](https://github.com/fenjalien/obsidian-latex-render) by fenjalien. Thank you for providing the starting point for this project.
+
+Thanks also to **SwiftLaTeX** for making it possible to run LaTeX engines in the browser (this plugin uses a [modified fork](https://github.com/kalmanmoshe/SwiftLaTeX)), and to **Texlyre** for maintaining the TeX Live mirror used to download packages on demand.

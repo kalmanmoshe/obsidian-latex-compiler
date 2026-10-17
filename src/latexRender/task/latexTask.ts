@@ -204,7 +204,7 @@ export class LatexTask {
 			renderChild = renderTarget;
 			containerEl = renderTarget.containerEl;
 		} else {
-			containerEl = renderTarget ?? activeDocument.createElement('div');
+			containerEl = renderTarget ?? activeDocument.createDocumentFragment().createDiv();
 		}
 		
 		const definition = getLatexCodeBlockDefinition(language);
