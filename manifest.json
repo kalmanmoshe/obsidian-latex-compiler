@@ -3,7 +3,7 @@
 	"name": "Latex Compiler",
 	"version": "1.0.0",
 	"minAppVersion": "1.8.7",
-	"description": "Compile LaTeX directly within Obsidian code blocks to PDF or SVG, and include vault files. No separate LaTeX installation required.",
+	"description": "Compile LaTeX directly within code blocks to PDF or SVG, and include vault files. No separate LaTeX installation required.",
 	"author": "Moshe Weinstock",
 	"authorUrl": "https://github.com/kalmanmoshe/",
 	"isDesktopOnly": false

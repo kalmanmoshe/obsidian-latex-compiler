@@ -6,11 +6,9 @@ import {
 	MarkdownView,
 	TFile,
 } from 'obsidian';
-import { extractCodeBlockMetadata, extractCodeBlockName } from '../resolvers/latexSourceFromFile';
+import { codeBlockToContent, extractCodeBlockMetadata, extractCodeBlockName } from '../resolvers/latexSourceFromFile';
 import { findMatchingCodeBlockSections } from '../resolvers/findSection';
 import { TaskSectionInformation } from '../resolvers/taskSectionInformation';
-
-import { codeBlockToContent } from 'obsidian-dev-utils';
 import { sectionToTaskSectionInfo, taskSectionInfoToContent } from '../resolvers/sectionUtils';
 import { hashLatexContent } from '../cache/compilerCache';
 import { CompilePipeline, ResultFileFormat, SOURCE_REVERIFICATION_TIME_MS } from 'src/settings/settings';

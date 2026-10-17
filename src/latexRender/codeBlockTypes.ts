@@ -38,8 +38,10 @@ const codeBlockLanguagePattern = Object.keys(LATEX_CODE_BLOCKS)
 	.sort((a, b) => b.length - a.length)
 	.join('|');
 
+export const codeBlockDelimiterRegex = /^\s*(?:`{3,}|~{3,})/;
+
 export const latexCodeBlockLanguageRegex = new RegExp(
-	`^(?:\`{3,}|~{3,})\\s*(${codeBlockLanguagePattern})(?=\\s|$)`,
+	`${codeBlockDelimiterRegex.source}\\s*(${codeBlockLanguagePattern})(?=\\s|$)`,
 	'i',
 );
 

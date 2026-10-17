@@ -1,10 +1,9 @@
 import { Command, Notice } from 'obsidian';
 import LatexCompilerPlugin from 'src/main';
 import { getTestCommands } from 'src/tests/compileTest';
-import { extractAllSectionsByFile } from 'src/latexRender/resolvers/latexSourceFromFile';
+import { codeBlockToContent, extractAllSectionsByFile } from 'src/latexRender/resolvers/latexSourceFromFile';
 import { hashLatexContent } from 'src/latexRender/cache/compilerCache';
 import { LatexTask, LatexTaskPriority } from 'src/latexRender/task/latexTask';
-import { codeBlockToContent } from 'obsidian-dev-utils';
 import { createBenchmarkCurrentFileCommand } from 'src/tests/benchmarkCurrentFileTest';
 
 function removeAllCachedPackages(plugin: LatexCompilerPlugin): Command {

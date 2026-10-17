@@ -49,7 +49,7 @@ function evaluateCommonJsModule(source: string): PdfToSvgFactory {
 	// The source is generated and bundled with the plugin, not user-controlled.
 	// Runtime evaluation is required to load the compressed CommonJS wrapper.
 	// TODO: maby compress only the wasm binary and load the wrapper from a separate file instead of compressing the entire wrapper.
-	// eslint-disable-next-line @typescript-eslint/no-implied-eval
+	// eslint-disable-next-line @typescript-eslint/no-implied-eval -- Load the trusted, bundled Emscripten wrapper after decompression.
 	const execute = new Function(
 		'exports',
 		'module',

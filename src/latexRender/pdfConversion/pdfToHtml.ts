@@ -2,7 +2,7 @@
   @typescript-eslint/no-unsafe-assignment,
   @typescript-eslint/no-unsafe-call,
   @typescript-eslint/no-unsafe-member-access,
-  @typescript-eslint/no-redundant-type-constituents
+  @typescript-eslint/no-redundant-type-constituents -- Obsidian exposes loadPdfJs as Promise<any>, so its PDF.js API lacks static types.
 */
 import { PDFDocument } from 'pdf-lib';
 import LatexCompilerPlugin from 'src/main';
@@ -413,3 +413,5 @@ async function getPdfDimensions(pdf: Uint8Array): Promise<{ width: number; heigh
 	const { width, height } = firstPage.getSize();
 	return { width, height };
 }
+
+/* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-redundant-type-constituents */

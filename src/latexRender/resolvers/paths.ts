@@ -1,7 +1,6 @@
 import { App, normalizePath, TAbstractFile, TFile, TFolder } from 'obsidian';
 import { getLatexTaskSectionInfosFromFile } from './taskSectionInformation';
-import { extractCodeBlockName } from './latexSourceFromFile';
-import { codeBlockToContent } from 'obsidian-dev-utils';
+import { codeBlockToContent, extractCodeBlockName } from './latexSourceFromFile';
 import { getLatexCodeBlockDefinition } from '../codeBlockTypes';
 import { isTexSourceExtension } from 'src/latexPreprocessor/ast/latexAbstractSyntaxTree';
 import { UserFacingPluginError } from '../errors/pluginErrors';

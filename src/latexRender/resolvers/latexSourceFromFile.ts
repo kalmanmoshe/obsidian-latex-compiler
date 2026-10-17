@@ -1,6 +1,5 @@
 import { App, TFile } from 'obsidian';
 import { getLatexTaskSectionInfosFromFile } from './taskSectionInformation';
-import { codeBlockToContent } from 'obsidian-dev-utils';
 import { hashLatexContent } from '../cache/compilerCache';
 import { latexCodeBlockLanguageRegex } from '../codeBlockTypes';
 
@@ -13,6 +12,15 @@ export async function extractAllSectionsByFile(app: App) {
 		})),
 	);
 	return sectionsByFile;
+}
+
+/**
+ * Removes the opening and closing delimiters from a code block string. (i.e., the ``` lines).
+ * @param codeBlock 
+ * @returns 
+ */
+export function codeBlockToContent(codeBlock: string): string {
+	return codeBlock.split("\n").slice(1, -1).join("\n");
 }
 
 export function extractCodeBlockMetadata(text: string): {

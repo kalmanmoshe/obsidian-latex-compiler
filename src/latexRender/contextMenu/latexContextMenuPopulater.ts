@@ -6,22 +6,12 @@ import {
 	findTaskSectionInfoFromHashInFile,
 	TaskSectionInformation,
 } from '../resolvers/taskSectionInformation';
-import { codeBlockToContent } from 'obsidian-dev-utils';
 import ResultFileCache, { splitCacheId } from '../cache/resultFileCache';
 import { LATEX_RENDER_ID_KEY } from '../pdfConversion/pdfToSVG';
 import { ResultFileFormat, CompilePipeline } from 'src/settings/settings';
 import { LatexRenderChild } from '../task/latexRenderChild';
 import { getLatexCodeBlockDefinition, LatexCodeBlockLanguage } from '../codeBlockTypes';
-
-type RequireFunction = {
-	(moduleName: 'child_process'): {
-		exec(this: void, command: string): void;
-	};
-};
-
-type WindowWithRequire = Window & {
-	require: RequireFunction;
-};
+import { codeBlockToContent } from '../resolvers/latexSourceFromFile';
 
 async function revealFileWithFocus(path: string) {
 	if (!Platform.isDesktopApp) {
@@ -29,23 +19,8 @@ async function revealFileWithFocus(path: string) {
 		return;
 	}
 
-	const childProcess = (activeWindow as WindowWithRequire).require('child_process');
-
-	if (Platform.isWin) {
-		const winPath = path.replace(/\//g, '\\');
-		childProcess.exec(`start "" explorer.exe /select,"${winPath}"`);
-	} else if (Platform.isMacOS) {
-		const script = `
-			tell application "Finder"
-				reveal POSIX file "${path}"
-				activate
-			end tell
-		`;
-		childProcess.exec(`osascript -e '${script.replace(/\n/g, '')}'`);
-	} else {
-		const { shell } = await import('electron');
-		shell.showItemInFolder(path);
-	}
+	const { shell } = await import('electron');
+	shell.showItemInFolder(Platform.isWin ? path.replace(/\//g, '\\') : path);
 }
 
 type RenderOutput =

@@ -1,22 +1,5 @@
-import { App, Editor, MarkdownSectionInformation, SectionCache, TFile } from 'obsidian';
-import type { EditorView } from '@codemirror/view';
-import { getFileSections } from 'obsidian-dev-utils';
+import { App, MarkdownSectionInformation, SectionCache, } from 'obsidian';
 import { getFileSectionsFromPath } from './sectionCache';
-
-type CodeMirrorEditor = Editor & {
-	cm: EditorView;
-};
-
-export async function getCurrentCursorLocationSection(file: TFile, editor: Editor) {
-	const sections = await getFileSections(file, true);
-	if (!sections) return;
-
-	const cmEditor = editor as CodeMirrorEditor;
-	const head = cmEditor.cm.state.selection.main.head;
-	const lineIndex = editor.offsetToPos(head).line;
-	const section = findInnermostSection(sections, lineIndex);
-	return section;
-}
 
 /**
  * Tries to find a code block section by exact or fuzzy string match against the file content.

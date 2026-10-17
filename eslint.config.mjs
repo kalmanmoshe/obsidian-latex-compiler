@@ -20,6 +20,7 @@ export default defineConfig(
     "esbuild.config.mjs",
     "version-bump.mjs",
     "**/*.config.mjs",
+    "scripts/**/*.mjs",
 
     "package.json",
     "package-lock.json",
