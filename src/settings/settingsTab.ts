@@ -183,8 +183,8 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 
 		this.addHeading(containerEl, 'Preamble', 'pencil');
 
-		const descriptionFragment = activeDocument.createDocumentFragment();
-		const descriptionDetails = activeDocument.createSpan();
+		const descriptionFragment = createFragment();
+		const descriptionDetails = descriptionFragment.createSpan();
 
 		descriptionDetails.textContent =
 			"When enabled, code blocks with a header specifying a name (e.g., 'name: someAwesomeCode') " +
@@ -213,8 +213,8 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 
 		this.addHeading(containerEl, 'Experimental', 'flask-conical');
 
-		const warning = activeDocument.createDocumentFragment();
-		const warningText = activeDocument.createDiv();
+		const warning = createFragment();
+		const warningText = warning.createDiv();
 
 		warningText.textContent =
 			'Warning: these features use experimental LaTeX source preprocessing and may alter or reinterpret the structure of your input. ' +

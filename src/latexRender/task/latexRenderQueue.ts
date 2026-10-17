@@ -115,7 +115,7 @@ const updateQueueCountdown = (queue: PriorityQueueObject<LatexTask>) => {
 };
 
 function createWaitingCountdown(index: number) {
-	const parentContainer = activeDocument.createDocumentFragment().createDiv({
+	const parentContainer = createFragment().createDiv({
 		cls: 'latex-compiler-loader-parent-container',
 	});
 

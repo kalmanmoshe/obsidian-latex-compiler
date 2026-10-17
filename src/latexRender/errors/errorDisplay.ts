@@ -26,7 +26,7 @@ export function errorMessageDiv(
 		triggeringPackage,
 	} = info;
 
-	const container = activeDocument.createDocumentFragment().createDiv({
+	const container = createFragment().createDiv({
 		cls: ['latex-compiler-error-container', `level-${level}`],
 	});
 
