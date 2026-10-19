@@ -1,6 +1,6 @@
 {
   "name": "latex-render",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Compile LaTeX directly within code blocks to PDF or SVG, and include vault files. No separate LaTeX installation required.",
   "main": "main.js",
   "scripts": {
