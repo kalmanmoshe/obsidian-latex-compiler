@@ -2,6 +2,7 @@ import {
 	Notice,
 	PluginSettingTab,
 	Setting,
+	requireApiVersion,
 	setIcon,
 	AbstractInputSuggest,
 	debounce,
@@ -78,15 +79,19 @@ export class LatexCompilerSettingTab extends PluginSettingTab {
 	}
 
 	private refreshSettings(): void {
-		// Feature detection keeps refresh compatible with Obsidian before 1.13.
-		// eslint-disable-next-line obsidianmd/no-unsupported-api
-		if (typeof this.update === 'function') this.update();
-		// eslint-disable-next-line @typescript-eslint/no-deprecated -- Legacy Obsidian fallback.
-		else this.display();
+		if (requireApiVersion('1.13.0')) {
+			this.update();
+		} else {
+			this.renderLegacySettings();
+		}
 	}
 
 	// Obsidian versions before 1.13 use the same definitions through this renderer.
 	display(): void {
+		this.renderLegacySettings();
+	}
+
+	private renderLegacySettings(): void {
 		this.containerEl.empty();
 		const sections = [
 			{ name: 'Graph', icon: 'ballpen', items: this.displayGraphSettings() },
