@@ -27,11 +27,11 @@ function createPdfShell(
 	const doc = container.ownerDocument;
 
 	// Obsidian's createDiv helper appends to its receiver; keep new nodes detached.
-	const wrapper = doc.createElement('div');
+	const wrapper = createDiv();
 	wrapper.className = 'latex-pdf-wrapper';
 	wrapper.setAttribute(LATEX_RENDER_ID_KEY, stem);
 
-	const toolbar = doc.createElement('div');
+	const toolbar = createDiv();
 	toolbar.className = 'latex-pdf-toolbar';
 
 	const menuButton = doc.adoptNode(createEl('button'));
@@ -290,12 +290,12 @@ export async function insertPdfWithPdfJs(
 			plugin,
 		);
 
-		const viewer = doc.createElement('div');
+		const viewer = createDiv();
 		viewer.className = 'latex-pdf-js-viewer';
 		viewer.style.aspectRatio =
 			`${firstViewport.width} / ${firstViewport.height}`;
 
-		const pagesEl = doc.createElement('div');
+		const pagesEl = createDiv();
 		pagesEl.className = 'latex-pdf-js-pages pdfViewer';
 		viewer.appendChild(pagesEl);
 		shell.wrapper.appendChild(viewer);
@@ -316,7 +316,7 @@ export async function insertPdfWithPdfJs(
 				const scale = pageWidth / natural.width;
 				const display = page.getViewport({ scale });
 
-				const pageEl = doc.createElement('div');
+				const pageEl = createDiv();
 				pageEl.className = 'latex-pdf-js-page page';
 				pageEl.dataset.pageNumber = String(number);
 				pageEl.style.width = `${display.width}px`;
@@ -326,10 +326,10 @@ export async function insertPdfWithPdfJs(
 					String(display.scale),
 				);
 
-				const canvasWrapper = doc.createElement('div');
+				const canvasWrapper = createDiv();
 				canvasWrapper.className = 'canvasWrapper';
 
-				const textLayerEl = doc.createElement('div');
+				const textLayerEl = createDiv();
 				textLayerEl.className = 'textLayer';
 
 				pageEl.append(canvasWrapper, textLayerEl);
