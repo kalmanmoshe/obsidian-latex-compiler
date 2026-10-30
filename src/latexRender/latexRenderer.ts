@@ -67,9 +67,7 @@ export class LatexRenderer {
 		const shouldBeEnabled =
 			this.plugin.getLocalStorageSettings().enableCompilerOnThisDevice;
 
-		const isEnabled =
-			this.compiler !== undefined &&
-			this.queue !== undefined;
+		const isEnabled = this.compiler !== undefined && this.queue !== undefined;
 
 		if (shouldBeEnabled === isEnabled) {
 			return;
@@ -125,13 +123,22 @@ export class LatexRenderer {
 
 		await this.loadCompiler();
 
-		this.queue = new LatexRenderQueue(
-			(t) => this.processAndRenderLatexTask(t),
-		);
+		this.queue = new LatexRenderQueue({
+			validate: async (task) => !(await this.shouldSkipStaleTask(task)),
+			prepare: (task) => this.prepareResultFile(task),
+			render: async (task, data) => {
+				if (!(await this.renderResultFile(task, data))) {
+					throw new Error(
+						'The compiled result does not match the requested output format.',
+					);
+				}
+			},
+			showError: (task, error) => this.displayErrorForTask(task, error),
+		});
 	}
 
 	private stopCompiler(): void {
-		this.queue?.abortAllWaiting();
+		this.queue?.dispose();
 		this.queue = undefined;
 
 		this.compiler?.closeWorkers();
@@ -149,11 +156,20 @@ export class LatexRenderer {
 		el.classList.add('latex-compiler-render');
 
 		if (definition.resultFormat === 'svg') {
-			el.classList.add(`latex-compiler-overflow-${this.plugin.settings.overflowStrategy}`);
+			el.classList.add(
+				`latex-compiler-overflow-${this.plugin.settings.overflowStrategy}`,
+			);
 		}
 
 		const rawHash = hashLatexContent(source);
-		const createResult = await LatexTask.createAsync(this.plugin, codeBlockLanguage, definition, source, el, ctx);
+		const createResult = await LatexTask.createAsync(
+			this.plugin,
+			codeBlockLanguage,
+			definition,
+			source,
+			el,
+			ctx,
+		);
 
 		if (createResult.isError) {
 			const child = new LatexRenderChild(el, this.plugin, ctx.sourcePath);
@@ -163,29 +179,31 @@ export class LatexRenderer {
 				createResult.result,
 				getCacheId(rawHash, ctx.sourcePath, definition.compilePipeline),
 				ctx.sourcePath,
-				codeBlockLanguage
+				codeBlockLanguage,
 			);
 			return;
 		}
 
 		const task = createResult.result as LatexTask;
 
-		// PDF file has already been cached
-		// Could have a case where pdfCache has the key but the cached file has been deleted
-		const wasRestoredFromCache = await this.restoreFromCache(task);
-		if (wasRestoredFromCache) return;
+		if (await this.restoreFromCache(task)) return;
 
 		if (!this.isCompilerEnabled()) {
-			el.replaceChildren(errorMessageDiv(
-				{
-					title: 'Compiler disabled',
-					explanation: 'The LaTeX compiler is disabled on this device. and no result file was fund in the cache for this codeblokc. Enable it in the plugin settings to render LaTeX.',
-				},
-				ErrorLevel.Info,
-			));
+			el.replaceChildren(
+				errorMessageDiv(
+					{
+						title: 'Compiler disabled',
+						explanation:
+							'The LaTeX compiler is disabled on this device. and no result file was fund in the cache for this codeblokc. Enable it in the plugin settings to render LaTeX.',
+					},
+					ErrorLevel.Info,
+				),
+			);
 		} else {
-			const isPdfExport = isPdfExportRender(el)
-			const priority = isPdfExport ? LatexTaskPriority.Export : LatexTaskPriority.Regular
+			const isPdfExport = isPdfExportRender(el);
+			const priority = isPdfExport
+				? LatexTaskPriority.Export
+				: LatexTaskPriority.Regular;
 			const completion = this.queue.push(task, priority);
 
 			if (isPdfExport) {
@@ -198,77 +216,57 @@ export class LatexRenderer {
 		}
 	}
 
-	/**
-	 * Processes and renders the given LaTeX task.
-	 *
-	 * @param task The task to process and render.
-	 * @returns `true` if the task was compiled and rendered; `false` if it was restored from cache or failed during processing.
-	 */
-	private async processAndRenderLatexTask(task: LatexTask): Promise<boolean> {
-		if (await this.restoreFromCache(task)) {
-			return false;
+	/** Read/compile shared data without rendering into a particular pane. */
+	private async prepareResultFile(task: LatexTask): Promise<CacheContent> {
+		try {
+			const cached = await this.cache.resultFileCache.getResultFile(
+				task.rawHash,
+				task.sourcePath,
+				task.compilePipeline,
+				task.resultFormat,
+			);
+			if (
+				cached !== undefined &&
+				(task.resultFormat === 'svg'
+					? typeof cached.data === 'string'
+					: cached.data instanceof Uint8Array)
+			)
+				return cached.data;
+		} catch (error) {
+			console.warn('Could not read LaTeX cache; compiling instead:', error);
 		}
-
-		if (await this.shouldSkipStaleTask(task)) return false;
 
 		if (!this.compiler?.isResponsive()) {
-			console.error('Compiler is unresponsive. Aborting task:', task.getDebugInfo());
-			this.displayErrorForTask(
-				task,
-				new UserFacingPluginError(
-					'Compiler unresponsive',
-					'The LaTeX compiler is not responding. Restart the compiler and try again.',
-				),
+			throw new UserFacingPluginError(
+				'Compiler unresponsive',
+				'The LaTeX compiler is not responding. Restart the compiler and try again.',
 			);
-			return false;
 		}
-
-		try {
-			await task.process();
-		} catch (processError) {
-			console.error('Error processing task:', processError, task.getDebugInfo());
-			this.displayErrorForTask(task, processError);
-			return false;
-		}
-
-		await this.renderLatexToElement(task);
-		await this.reCheckQueue(); // only re-check the queue after a valide rendering
-		return true;
+		await task.process();
+		return this.compileResultFile(task);
 	}
 
 	private async shouldSkipStaleTask(task: LatexTask): Promise<boolean> {
-		if (!task.isStillValid() || !task.hasSourceChangeTimeExceededMargin()) return false;
+		if (!task.isStillValid()) return true;
+		if (!task.hasSourceChangeTimeExceededMargin()) return false;
 		if (await task.verifySource()) return false;
-
-		if (this.hasNewerQueuedTask(task)) {
-			console.warn('Skipping stale task because a newer task exists:', task.getDebugInfo());
-			return true;
-		}
-
-		console.error('Source files changed and could not be resolved:', task.getDebugInfo());
 
 		this.displayErrorForTask(
 			task,
 			new UserFacingPluginError(
 				'Source changed during rendering',
 				'The source changed while this LaTeX block was being processed. Rerender the block to try again.',
-			)
+			),
 		);
-
 		return true;
-	}
-
-	private hasNewerQueuedTask(task: LatexTask): boolean {
-		if (!this.isCompilerEnabled()) return false;
-
-		return this.queue
-			.getWaitingTasks()
-			.some((waitingTask) => waitingTask.getBlockId() === task.getBlockId());
 	}
 
 	async detachedProcessAndRender(task: LatexTask) {
 		if (!this.compiler?.isResponsive()) {
-			console.error('Compiler is unresponsive. Aborting task:', task.getDebugInfo());
+			console.error(
+				'Compiler is unresponsive. Aborting task:',
+				task.getDebugInfo(),
+			);
 			return {
 				result: new CompileResult(
 					undefined,
@@ -284,64 +282,56 @@ export class LatexRenderer {
 			console.error('Error processing task:', err, task.getDebugInfo());
 			const errorMessage = toErrorString(err);
 			return {
-				result: new CompileResult(undefined, CompileStatus.ProcessingError, errorMessage),
-				compilationSession: undefined
+				result: new CompileResult(
+					undefined,
+					CompileStatus.ProcessingError,
+					errorMessage,
+				),
+				compilationSession: undefined,
 			};
 		}
 
 		try {
 			const latexRenderResult = await this.renderLatexToPDF(
 				task.getProcessedContent(),
-				task.sourcePath
+				task.sourcePath,
 			);
 			return latexRenderResult;
 		} catch (err) {
 			let errorText, session: LatexRenderCompilationSession | undefined;
+
 			if (err instanceof LatexCompilationError) {
 				errorText = err.latexLog;
 				session = err.session;
 			} else {
 				errorText = toErrorString(err);
 			}
+
 			return {
-				result: new CompileResult(undefined, CompileStatus.CompileError, errorText),
-				compilationSession: session
+				result: new CompileResult(
+					undefined,
+					CompileStatus.CompileError,
+					errorText,
+				),
+				compilationSession: session,
 			};
 		}
 	}
 
-	/**
-	 * Re-checks the queue to see if any tasks can be removed based on whether their PDF has been restored from cache.
-	 * If a task's PDF cannot be restored, it is removed from the queue.
-	 * Solves edge case where head is in the processing state when a similar task is registered to the universal method
-	 */
-	private async reCheckQueue() {
-		if (!this.queue) return;
-		const blockIdsToRemove = new Set<string>();
-		const waitingTasks = this.queue.getWaitingTasks();
-
-		for (const task of waitingTasks) {
-			if (await this.restoreFromCache(task)) {
-				blockIdsToRemove.add(task.getBlockId());
-			}
-		}
-
-		if (blockIdsToRemove.size === 0) return;
-
-		this.queue.removeFromWaiting((task) => blockIdsToRemove.has(task.getBlockId()));
-	}
-
 	async onunload() {
-		this.compiler?.closeWorkers();
+		this.stopCompiler();
 	}
 
-	private displayErrorForTask(
-		task: LatexTask,
-		err: unknown
-	): void {
+	private displayErrorForTask(task: LatexTask, err: unknown): void {
 		// there is nothing to display the error to, so we just return.
-		if (!task.renderChild) return;
-		this.displayError(task.renderChild, err, task.getStem(), task.sourcePath, task.codeBlockLanguage);
+		if (!task.renderChild || task.renderChild.isUnloaded) return;
+		this.displayError(
+			task.renderChild,
+			err,
+			task.getStem(),
+			task.sourcePath,
+			task.codeBlockLanguage,
+		);
 	}
 
 	private displayError(
@@ -351,6 +341,7 @@ export class LatexRenderer {
 		sourcePath: string,
 		codeBlockLanguage: LatexCodeBlockLanguage,
 	): void {
+		if (renderChild.isUnloaded) return;
 		const el = renderChild.containerEl;
 		el.innerHTML = '';
 
@@ -359,7 +350,7 @@ export class LatexRenderer {
 			const processedLog: ProcessedLog = this.cache.getLog(cacheId)?.log || parseLatexLog(err.latexLog);
 			processedError = refactorLogToErrorMessage(processedLog);
 		} else {
-			processedError = pluginErrorToErrorMessage(err)
+			processedError = pluginErrorToErrorMessage(err);
 		}
 
 		const child = errorMessageDiv(processedError, ErrorLevel.Error);
@@ -368,8 +359,9 @@ export class LatexRenderer {
 		this.plugin.menuDecider.add(renderChild, sourcePath, codeBlockLanguage)
 	}
 
-	private async renderLatexToElement(task: LatexTask): Promise<void> {
-		const { content, rawHash, sourcePath, stem, compilePipeline, format } = task.getRenderData();
+	private async compileResultFile(task: LatexTask): Promise<CacheContent> {
+		const { content, rawHash, sourcePath, stem, compilePipeline, format } =
+			task.getRenderData();
 
 		try {
 			const { result, compilationSession } = await this.renderLatexToPDF(
@@ -378,23 +370,28 @@ export class LatexRenderer {
 				{
 					fetchPkgData: true,
 					cacheId: getCacheId(rawHash, sourcePath, compilePipeline),
-				}
+				},
 			);
 
 			const resultFile = await this.createResultFile(result.pdf, stem, format);
 
-			await this.renderResultFile(task, resultFile);
-
-			await this.cache.resultFileCache.addFile(
-				resultFile,
-				rawHash,
-				sourcePath,
-				compilationSession.createContentHashRecord(),
-				compilePipeline,
-				format
-			);
-		} catch (err: unknown) {
-			this.displayErrorForTask(task, err);
+			try {
+				await this.cache.resultFileCache.addFile(
+					resultFile,
+					rawHash,
+					sourcePath,
+					compilationSession.createContentHashRecord(),
+					compilePipeline,
+					format,
+				);
+			} catch (error) {
+				// A persistence failure must not discard a successful compilation.
+				console.warn(
+					'Could not save the compiled LaTeX result to cache:',
+					error,
+				);
+			}
+			return resultFile;
 		} finally {
 			if (!this.compiler?.isResponsive()) {
 				console.warn('Compiler is unresponsive.');
@@ -408,13 +405,19 @@ export class LatexRenderer {
 		source: string,
 		sourcePath: string,
 		config: { fetchPkgData?: boolean; cacheId?: string } = {},
-	): Promise<{ result: CompileResult; compilationSession: LatexRenderCompilationSession }> {
+	): Promise<{
+		result: CompileResult;
+		compilationSession: LatexRenderCompilationSession;
+	}> {
 		await this.compiler!.waitUntilReady();
 		await this.compiler!.flushWorkCache();
 		await this.compiler!.writeMemFSFile('main.tex', source);
 		await this.compiler!.setEngineMainFile(0, 'main.tex');
 
-		const compilationSession = new LatexRenderCompilationSession(this, sourcePath);
+		const compilationSession = new LatexRenderCompilationSession(
+			this,
+			sourcePath,
+		);
 		const result = await this.compiler!.compileLaTeX(compilationSession);
 
 		if (config.cacheId) {
@@ -432,7 +435,11 @@ export class LatexRenderer {
 		return { result, compilationSession };
 	}
 
-	private async createResultFile(pdfData: Uint8Array, stem: string, format: ResultFileFormat): Promise<CacheContent> {
+	private async createResultFile(
+		pdfData: Uint8Array,
+		stem: string,
+		format: ResultFileFormat,
+	): Promise<CacheContent> {
 		if (format === 'pdf') return pdfData;
 
 		const config = {
@@ -440,7 +447,7 @@ export class LatexRenderer {
 			stem,
 		};
 
-		return await pdfToOptimizedSVG(pdfData, config)
+		return await pdfToOptimizedSVG(pdfData, config);
 	}
 
 	private async restoreFromCache(task: LatexTask) {
@@ -449,7 +456,7 @@ export class LatexRenderer {
 				task.rawHash,
 				task.sourcePath,
 				task.compilePipeline,
-				task.resultFormat
+				task.resultFormat,
 			);
 			if (result === undefined) return false;
 			return this.renderResultFile(task, result.data);
@@ -465,8 +472,8 @@ export class LatexRenderer {
 	): Promise<boolean> {
 		// using getStem here will work fine and we dont have to worry about it not being generated yet because we are only calling this function after a successful compilation/fetch from cache, which will always generate the stem before calling this function.
 		const renderChild = task.renderChild, stem = task.getStem();
-		//we successfully restored from cache, but the task has no renderer child to render to. 
-		if (!renderChild) return true;
+		//we successfully restored from cache, but the task has no renderer child to render to.
+		if (!renderChild || renderChild.isUnloaded) return true;
 
 		if (task.resultFormat === 'svg') {
 			if (typeof data !== 'string') {
@@ -474,14 +481,18 @@ export class LatexRenderer {
 				return false;
 			}
 
-			insertSvg(data, renderChild, task.sourcePath, task.codeBlockLanguage, this.plugin);
+			insertSvg(
+				data,
+				renderChild,
+				task.sourcePath,
+				task.codeBlockLanguage,
+				this.plugin,
+			);
 			return true;
 		}
 
 		if (!(data instanceof Uint8Array)) {
-			console.warn(
-				`Expected PDF cache entry ${stem} to contain binary data.`,
-			);
+			console.warn(`Expected PDF cache entry ${stem} to contain binary data.`);
 			return false;
 		}
 
@@ -514,9 +525,7 @@ export class LatexRenderer {
 		queue: LatexRenderQueue;
 		compiler: LatexCompiler;
 	} {
-		return (
-			this.plugin.getLocalStorageSettings().enableCompilerOnThisDevice
-		);
+		return this.plugin.getLocalStorageSettings().enableCompilerOnThisDevice;
 	}
 }
 
@@ -527,7 +536,4 @@ function isPdfExportRender(el: HTMLElement): boolean {
 		doc.location.href === 'about:blank' &&
 		doc.body.querySelector(':scope > .print') !== null
 	);
-}
-
-
-
+ }

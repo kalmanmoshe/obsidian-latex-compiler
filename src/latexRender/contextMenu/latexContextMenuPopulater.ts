@@ -13,14 +13,39 @@ import { LatexRenderChild } from '../task/latexRenderChild';
 import { getLatexCodeBlockDefinition, LatexCodeBlockLanguage } from '../codeBlockTypes';
 import { codeBlockToContent } from '../resolvers/latexSourceFromFile';
 
+type RequireFunction = {
+	(moduleName: 'child_process'): {
+		exec(this: void, command: string): void;
+	};
+};
+
+type WindowWithRequire = Window & {
+	require: RequireFunction;
+};
+
 async function revealFileWithFocus(path: string) {
 	if (!Platform.isDesktopApp) {
 		new Notice('Reveal in file explorer is only available on desktop.');
 		return;
 	}
 
-	const { shell } = await import('electron');
-	shell.showItemInFolder(Platform.isWin ? path.replace(/\//g, '\\') : path);
+	const childProcess = (activeWindow as WindowWithRequire).require('child_process');
+
+	if (Platform.isWin) {
+		const winPath = path.replace(/\//g, '\\');
+		childProcess.exec(`start "" explorer.exe /select,"${winPath}"`);
+	} else if (Platform.isMacOS) {
+		const script = `
+			tell application "Finder"
+				reveal POSIX file "${path}"
+				activate
+			end tell
+		`;
+		childProcess.exec(`osascript -e '${script.replace(/\n/g, '')}'`);
+	} else {
+		const { shell } = await import('electron');
+		shell.showItemInFolder(path);
+	}
 }
 
 type RenderOutput =

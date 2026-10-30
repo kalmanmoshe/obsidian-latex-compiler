@@ -279,9 +279,9 @@ export class LatexTask {
 	}
 
 	// Detached tasks have no DOM lifecycle.
-	// Managed render tasks are valid only while their element is still attached.
+	// A preview may be temporarily detached while Obsidian restores its layout.
 	isStillValid() {
-		return this.renderChild === undefined || this.el.isConnected;
+		return !this.renderChild?.isUnloaded;
 	}
 
 	getStem() {
@@ -355,3 +355,4 @@ export class LatexTask {
 		};
 	}
 }
+

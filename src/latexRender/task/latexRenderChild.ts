@@ -35,6 +35,10 @@ export class LatexRenderChild extends MarkdownRenderChild {
 	}
 
 	setObjectUrl(objectUrl: string): void {
+		if (this.unloaded) {
+			URL.revokeObjectURL(objectUrl);
+			return;
+		}
 		if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
 		this.objectUrl = objectUrl;
 	}
