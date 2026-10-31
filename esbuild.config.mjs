@@ -56,6 +56,7 @@ const args = {
   external: [
     "obsidian",
     "electron",
+    'node:child_process',
     "react",
     "react-dom",
     "@codemirror/autocomplete",

@@ -1,4 +1,6 @@
 import { Menu, Notice, TFile, Platform } from 'obsidian';
+import { execFile } from 'node:child_process';
+import { shell } from 'electron';
 import LatexCompilerPlugin from 'src/main';
 import { LogDisplayModal } from '../logs/logDisplayModal';
 import { LatexTask, LatexTaskPriority } from '../task/latexTask';
@@ -13,39 +15,26 @@ import { LatexRenderChild } from '../task/latexRenderChild';
 import { getLatexCodeBlockDefinition, LatexCodeBlockLanguage } from '../codeBlockTypes';
 import { codeBlockToContent } from '../resolvers/latexSourceFromFile';
 
-type RequireFunction = {
-	(moduleName: 'child_process'): {
-		exec(this: void, command: string): void;
-	};
-};
+function revealFileWithFocus(path: string): void {
+    if (!Platform.isDesktopApp) {
+        new Notice('Reveal in file explorer is only available on desktop.');
+        return;
+    }
 
-type WindowWithRequire = Window & {
-	require: RequireFunction;
-};
-
-async function revealFileWithFocus(path: string) {
-	if (!Platform.isDesktopApp) {
-		new Notice('Reveal in file explorer is only available on desktop.');
-		return;
-	}
-
-	const childProcess = (activeWindow as WindowWithRequire).require('child_process');
-
-	if (Platform.isWin) {
-		const winPath = path.replace(/\//g, '\\');
-		childProcess.exec(`start "" explorer.exe /select,"${winPath}"`);
-	} else if (Platform.isMacOS) {
-		const script = `
-			tell application "Finder"
-				reveal POSIX file "${path}"
-				activate
-			end tell
-		`;
-		childProcess.exec(`osascript -e '${script.replace(/\n/g, '')}'`);
-	} else {
-		const { shell } = await import('electron');
-		shell.showItemInFolder(path);
-	}
+    if (Platform.isWin) {
+        execFile('explorer.exe', [`/select,${path}`]);
+    } else if (Platform.isMacOS) {
+        execFile('open', ['-R', path], (error) => {
+            if (!error) {
+                execFile('osascript', [
+                    '-e',
+                    'tell application "Finder" to activate',
+                ]);
+            }
+        });
+    } else {
+        shell.showItemInFolder(path);
+    }
 }
 
 type RenderOutput =
@@ -339,6 +328,7 @@ export class LatexContextMenuPopulater {
 			const filePath = this.resultFileCache.getAbsolutePathFromStem(this.stem, format);
 			void revealFileWithFocus(filePath);
 		} catch (err) {
+			new Notice('Failed to open file in explorer. See console for details.');
 			console.error('Failed to open file in explorer:', err);
 		}
 	}
