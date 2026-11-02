@@ -1,5 +1,4 @@
 import { Menu, Notice, TFile, Platform } from 'obsidian';
-import { execFile } from 'node:child_process';
 import { shell } from 'electron';
 import LatexCompilerPlugin from 'src/main';
 import { LogDisplayModal } from '../logs/logDisplayModal';
@@ -15,23 +14,49 @@ import { LatexRenderChild } from '../task/latexRenderChild';
 import { getLatexCodeBlockDefinition, LatexCodeBlockLanguage } from '../codeBlockTypes';
 import { codeBlockToContent } from '../resolvers/latexSourceFromFile';
 
+interface NodeRequire {
+    (moduleName: string): unknown;
+}
+
+interface ChildProcessModule {
+    execFile(
+        this: void,
+        file: string,
+        args: string[],
+        callback?: (error: Error | null) => void,
+    ): void;
+}
+
 function revealFileWithFocus(path: string): void {
     if (!Platform.isDesktopApp) {
         new Notice('Reveal in file explorer is only available on desktop.');
         return;
     }
 
-    if (Platform.isWin) {
-        execFile('explorer.exe', [`/select,${path}`]);
-    } else if (Platform.isMacOS) {
-        execFile('open', ['-R', path], (error) => {
-            if (!error) {
-                execFile('osascript', [
-                    '-e',
-                    'tell application "Finder" to activate',
-                ]);
-            }
-        });
+    if (Platform.isWin || Platform.isMacOS) {
+        const win = window as Window & {
+            require?: NodeRequire;
+        };
+
+        if (typeof win.require !== 'function') {
+            new Notice('Node.js is unavailable.');
+            return;
+        }
+
+        const { execFile } = win.require('child_process') as ChildProcessModule;
+
+        if (Platform.isWin) {
+            execFile('explorer.exe', [`/select,${path}`]);
+        } else {
+            execFile('open', ['-R', path], (error) => {
+                if (!error) {
+                    execFile('osascript', [
+                        '-e',
+                        'tell application "Finder" to activate',
+                    ]);
+                }
+            });
+        }
     } else {
         shell.showItemInFolder(path);
     }
