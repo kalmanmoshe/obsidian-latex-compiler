@@ -29,8 +29,10 @@ export default abstract class LatexCompiler {
 		});
 	}
 
-	async loadEngines() {
-		await Promise.all(this.engines.map((engine) => engine.loadEngine()));
+	async loadEngines(): Promise<void> {
+		for (const engine of this.engines) {
+			await engine.loadEngine();
+		}
 	}
 
 	async setTexliveEndpoint(url: string): Promise<void> {

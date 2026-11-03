@@ -102,7 +102,9 @@ export default class LatexEngine {
 
 		this.engineStatus = EngineStatus.Init;
 
+		const time = performance.now();
 		this.worker = await this.createWorker();
+		console.log(`Engine ${this.engineName} loaded in ${performance.now() - time} ms`);
 
 		await new Promise<void>((resolve, reject) => {
 			this.worker!.onmessage = (ev: MessageEvent<WorkerMessage>) => {

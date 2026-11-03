@@ -1,16 +1,20 @@
 // Payload modules are generated during builds and are not checked into Git.
 declare module '*generated/pdftexWorker.payload' {
-	export const pdftexWorkerGzipBase64: string;
+	export const pdftexWorkerBrotliBase64: string;
 }
 
 declare module '*generated/xetexWorker.payload' {
-	export const xetexWorkerGzipBase64: string;
+	export const xetexWorkerBrotliBase64: string;
 }
 
 declare module '*generated/dviWorker.payload' {
-	export const dviWorkerGzipBase64: string;
+	export const dviWorkerBrotliBase64: string;
 }
 
 declare module '*generated/pdfToSvgWasm.payload' {
-	export const pdfToSvgWasmGzipBase64: string;
+	export const pdfToSvgWasmBrotliBase64: string;
+}
+
+declare module '*generated/brotliDecoderWasm.payload' {
+	export const brotliDecoderWasmGzipBase64: string;
 }

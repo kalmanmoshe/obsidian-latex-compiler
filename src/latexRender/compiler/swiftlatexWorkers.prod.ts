@@ -1,10 +1,10 @@
-import { pdftexWorkerGzipBase64 } from '../../generated/pdftexWorker.payload';
-import { xetexWorkerGzipBase64 } from '../../generated/xetexWorker.payload';
-import { dviWorkerGzipBase64 } from '../../generated/dviWorker.payload';
-import { decompressGzipText } from 'src/util/decompressPayload';
+import { pdftexWorkerBrotliBase64 } from '../../generated/pdftexWorker.payload';
+import { xetexWorkerBrotliBase64 } from '../../generated/xetexWorker.payload';
+import { dviWorkerBrotliBase64 } from '../../generated/dviWorker.payload';
+import { decompressText } from 'src/util/decompressPayload';
 
 async function createWorkerFromCompressedPayload(base64Payload: string, name: string): Promise<Worker> {
-	const source = await decompressGzipText(base64Payload);
+	const source = await decompressText(base64Payload);
 
 	const sourceName = `latex-${name.toLowerCase()}-worker.js`;
 	const namedSource = `${source}\n//# sourceURL=${sourceName}`;
@@ -21,13 +21,13 @@ async function createWorkerFromCompressedPayload(base64Payload: string, name: st
 }
 
 export const pdftexWorkerFactory = async (): Promise<Worker> => {
-	return createWorkerFromCompressedPayload(pdftexWorkerGzipBase64, 'PDFTeX');
+	return createWorkerFromCompressedPayload(pdftexWorkerBrotliBase64, 'PDFTeX');
 };
 
 export const xetexWorkerFactory = async (): Promise<Worker> => {
-	return createWorkerFromCompressedPayload(xetexWorkerGzipBase64, 'XeTeX');
+	return createWorkerFromCompressedPayload(xetexWorkerBrotliBase64, 'XeTeX');
 };
 
 export const dviWorkerFactory = async (): Promise<Worker> => {
-	return createWorkerFromCompressedPayload(dviWorkerGzipBase64, 'DVI');
+	return createWorkerFromCompressedPayload(dviWorkerBrotliBase64, 'DVI');
 };

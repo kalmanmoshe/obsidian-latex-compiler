@@ -1,5 +1,5 @@
-import { decompressGzipBytes } from 'src/util/decompressPayload';
-import { pdfToSvgWasmGzipBase64 } from '../../generated/pdfToSvgWasm.payload';
+import { decompressBytes } from 'src/util/decompressPayload';
+import { pdfToSvgWasmBrotliBase64 } from '../../generated/pdfToSvgWasm.payload';
 import createPdfToSvgModule from '../../generated/pdfToSvgRuntime';
 
 type PdfToSvgFactory = () => Promise<PdfToSvgModule>;
@@ -24,7 +24,7 @@ export interface PdfToSvgModule {
 let wasmBytesPromise: Promise<Uint8Array> | undefined;
 
 const PdfToSvgWasm: PdfToSvgFactory = async () => {
-	wasmBytesPromise ??= decompressGzipBytes(pdfToSvgWasmGzipBase64).catch((error: unknown) => {
+	wasmBytesPromise ??= decompressBytes(pdfToSvgWasmBrotliBase64).catch((error: unknown) => {
 		wasmBytesPromise = undefined;
 		throw error;
 	});
