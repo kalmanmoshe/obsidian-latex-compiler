@@ -118,12 +118,6 @@ export class LatexRenderQueue {
 		return this.activeJob === undefined && this.length() === 0;
 	}
 
-	getWaitingTasks(): LatexTask[] {
-		return this.getWaitingJobs().flatMap((job) =>
-			[...job.requests].map((request) => request.task),
-		);
-	}
-
 	/** Defer startup so synchronous pushes can join or change priority. */
 	private scheduleDrain(): void {
 		if (this.draining || this.disposed) return;

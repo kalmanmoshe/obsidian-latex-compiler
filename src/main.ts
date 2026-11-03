@@ -42,11 +42,10 @@ export default class LatexCompilerPlugin extends Plugin {
 
 	private async loadLayoutReadyDependencies() {
 		await this.setCacheDir();
-		// we need to use await here because the codeBlock processor
-		// needs to be loaded before the codeBlocks are processed
-		await this.latexRenderer.onload(this);
+		
+		this.latexRenderer.onload(this);
 		this.latexRenderer.preprocessor.refresh(true);
-		// processing of the code blocks have layout dependencies
+		
 		try {
 			this.setCodeblocks();
 		} catch (e) {
@@ -56,6 +55,8 @@ export default class LatexCompilerPlugin extends Plugin {
 		this.watchFiles();
 		//some commands are only available when the compiler is enabled, so we need to check that before adding them
 		this.addEditorCommands();
+
+    	void this.latexRenderer.syncCompilerState();
 	}
 
 	private setCodeblocks() {

@@ -36,14 +36,13 @@ export class LatexRenderer {
 	compiler?: LatexCompiler;
 	cache: CompilerCache;
 	queue?: LatexRenderQueue;
+	private compilerStartPromise?: Promise<void>;
 
-	async onload(plugin: LatexCompilerPlugin) {
+	onload(plugin: LatexCompilerPlugin): void {
 		this.plugin = plugin;
-		this.cache = new CompilerCache(this.plugin);
-
-		await this.syncCompilerState();
-
+		this.cache = new CompilerCache(plugin);
 		this.ensurePreprocessor();
+		this.initializeQueueIfNeeded();
 	}
 
 	ensurePreprocessor() {
@@ -64,20 +63,15 @@ export class LatexRenderer {
 	}
 
 	async syncCompilerState(): Promise<void> {
-		const shouldBeEnabled =
-			this.plugin.getLocalStorageSettings().enableCompilerOnThisDevice;
+    	const shouldBeEnabled =
+        	this.plugin.getLocalStorageSettings().enableCompilerOnThisDevice;
 
-		const isEnabled = this.compiler !== undefined && this.queue !== undefined;
-
-		if (shouldBeEnabled === isEnabled) {
+		if (!shouldBeEnabled) {
+			this.stopCompiler();
 			return;
 		}
 
-		if (shouldBeEnabled) {
-			await this.startCompiler();
-		} else {
-			this.stopCompiler();
-		}
+		await this.startCompiler();
 	}
 
 	switchCompiler(): Promise<void> {
@@ -93,35 +87,11 @@ export class LatexRenderer {
 
 		if (isTex || isXeTeX) return Promise.resolve();
 
-		this.compiler.closeWorkers();
-		this.compiler = undefined;
-
-		return this.loadCompiler();
+		return this.restartCompiler();
 	}
 
-	private async loadCompiler() {
-		if (!this.isCompilerEnabled()) return;
-		if (this.plugin.settings.compiler === CompilerType.PdfTeX) {
-			this.compiler = new PdfTeXCompiler();
-		} else {
-			this.compiler = new PdfXeTeXCompiler();
-		}
-
-		await this.compiler.loadEngines();
-		await this.cache.loadTexLiveCache();
-		await this.compiler.setTexliveEndpoint(this.plugin.settings.package_url);
-	}
-
-	async restartCompiler() {
-		this.stopCompiler();
-		if (!this.isCompilerEnabled()) return;
-		await this.startCompiler();
-	}
-
-	private async startCompiler(): Promise<void> {
-		if (this.compiler || this.queue) return;
-
-		await this.loadCompiler();
+	private initializeQueueIfNeeded() {
+		if (!this.isCompilerEnabled() || this.queue) return;
 
 		this.queue = new LatexRenderQueue({
 			validate: async (task) => !(await this.shouldSkipStaleTask(task)),
@@ -137,9 +107,43 @@ export class LatexRenderer {
 		});
 	}
 
+	private async loadCompiler() {
+		if (!this.isCompilerEnabled()) return;
+		if (this.plugin.settings.compiler === CompilerType.PdfTeX) {
+			this.compiler = new PdfTeXCompiler();
+		} else {
+			this.compiler = new PdfXeTeXCompiler();
+		}
+		//its rare but did hapen to me the the compiler was swiched during load, so we need to check if the compiler is still the same after loading it.
+		const compiler = this.compiler;
+		await compiler.loadEngines();
+		if (this.compiler !== compiler) return;
+		await this.cache.loadTexLiveCache();
+		if (this.compiler !== compiler) return;
+		await compiler.setTexliveEndpoint(this.plugin.settings.package_url);
+	}
+
+	async restartCompiler() {
+		this.stopCompiler();
+		if (!this.isCompilerEnabled()) return;
+		await this.startCompiler();
+	}
+
+	private async startCompiler(): Promise<void> {
+		if (this.compilerStartPromise) {
+			return this.compilerStartPromise;
+		}
+
+		this.initializeQueueIfNeeded();
+
+		return this.compilerStartPromise = this.loadCompiler();
+	}
+
 	private stopCompiler(): void {
 		this.queue?.dispose();
 		this.queue = undefined;
+
+		this.compilerStartPromise = undefined;
 
 		this.compiler?.closeWorkers();
 		this.compiler = undefined;
@@ -236,12 +240,6 @@ export class LatexRenderer {
 			console.warn('Could not read LaTeX cache; compiling instead:', error);
 		}
 
-		if (!this.compiler?.isResponsive()) {
-			throw new UserFacingPluginError(
-				'Compiler unresponsive',
-				'The LaTeX compiler is not responding. Restart the compiler and try again.',
-			);
-		}
 		await task.process();
 		return this.compileResultFile(task);
 	}
@@ -262,20 +260,6 @@ export class LatexRenderer {
 	}
 
 	async detachedProcessAndRender(task: LatexTask) {
-		if (!this.compiler?.isResponsive()) {
-			console.error(
-				'Compiler is unresponsive. Aborting task:',
-				task.getDebugInfo(),
-			);
-			return {
-				result: new CompileResult(
-					undefined,
-					CompileStatus.EngineCrashed,
-					'Compiler is unresponsive. Please restart the compiler.',
-				),
-				compilationSession: undefined,
-			};
-		}
 		try {
 			await task.process();
 		} catch (err) {
@@ -409,6 +393,15 @@ export class LatexRenderer {
 		result: CompileResult;
 		compilationSession: LatexRenderCompilationSession;
 	}> {
+		if (this.compilerStartPromise) {
+			await this.compilerStartPromise;
+		} else {
+			throw new UserFacingPluginError(
+				'Compiler unavailable',
+				'The LaTeX compiler has not been initialized.',
+			);
+		}
+		
 		await this.compiler!.waitUntilReady();
 		await this.compiler!.flushWorkCache();
 		await this.compiler!.writeMemFSFile('main.tex', source);
