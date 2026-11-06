@@ -75,6 +75,8 @@ export interface LatexCompilerPluginSettings {
 	experimentalSmartPreprocessing: boolean;
 
 	autoloadedVfsFilesDir: string;
+
+	hasShownFirstCompileNotice: boolean;
 }
 
 export const DEFAULT_SETTINGS: LatexCompilerPluginSettings = {
@@ -93,6 +95,8 @@ export const DEFAULT_SETTINGS: LatexCompilerPluginSettings = {
 	experimentalSmartPreprocessing: false,
 
 	autoloadedVfsFilesDir: '',
+
+	hasShownFirstCompileNotice: false,
 };
 
 export const LOCAL_STORAGE_KEY = 'latex-compiler-local-settings';

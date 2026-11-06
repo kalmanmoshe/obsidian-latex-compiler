@@ -1,4 +1,4 @@
-import { MarkdownPostProcessorContext, Platform } from 'obsidian';
+import { MarkdownPostProcessorContext, Notice, Platform, setIcon } from 'obsidian';
 import { CompileResult, CompileStatus } from './compiler/base/compilerBase/engine';
 import LatexCompilerPlugin from '../main';
 import { CompilerType, ResultFileFormat } from 'src/settings/settings.js';
@@ -401,6 +401,12 @@ export class LatexRenderer {
 				'The LaTeX compiler has not been initialized.',
 			);
 		}
+
+		if (!this.plugin.settings.hasShownFirstCompileNotice) {
+			showFirstCompilationNotice();
+			this.plugin.settings.hasShownFirstCompileNotice = true;
+			await this.plugin.saveSettings();
+		}
 		
 		await this.compiler!.waitUntilReady();
 		await this.compiler!.flushWorkCache();
@@ -529,4 +535,38 @@ function isPdfExportRender(el: HTMLElement): boolean {
 		doc.location.href === 'about:blank' &&
 		doc.body.querySelector(':scope > .print') !== null
 	);
- }
+}
+
+export function showFirstCompilationNotice(): void {
+    const notice = new Notice('', 0);
+
+	notice.containerEl.addClass('latex-first-compile-notice');
+
+    const content = notice.messageEl.createDiv({
+        cls: 'latex-first-compile-content',
+    });
+
+    const iconEl = content.createDiv({
+        cls: 'latex-first-compile-icon',
+    });
+    setIcon(iconEl, 'download');
+
+    const body = content.createDiv({
+        cls: 'latex-first-compile-body',
+    });
+
+    body.createDiv({
+        cls: 'latex-first-compile-title',
+        text: 'First compilation',
+    });
+
+    body.createDiv({
+        cls: 'latex-first-compile-description',
+        text: 'Required LaTeX packages may need to be downloaded, so your first compilation could take longer.',
+    });
+
+    body.createDiv({
+        cls: 'latex-first-compile-hint',
+        text: 'Packages are cached for future compilations.',
+    });
+}

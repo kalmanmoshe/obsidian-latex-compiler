@@ -40,6 +40,9 @@ export enum EngineCommands {
 	FlushWorkDirectory = 'flushworkcache',
 	Removefile = 'removefile',
 	Compilepdf = 'compilepdf',
+
+	DownloadStarted = 'download-started',
+	DownloadFinished = 'download-finished'
 }
 
 export enum CompileStatus {
@@ -266,11 +269,10 @@ export default class LatexEngine {
 		return files;
 	}
 
-	//todo: take down timer revert to 15000 when loding pkg for the first time it taks a lot of time
 	task<T = void>(
 		task: EngineTask,
 		onIntermediateMessage?: (message: WorkerMessage) => Promise<boolean> | boolean,
-		timeoutMs = 1500000
+		timeoutMs = 15000
 	): Promise<T> {
 		const command = task.cmd;
 
@@ -282,6 +284,19 @@ export default class LatexEngine {
 
 		return new Promise<T>((resolve, reject) => {
 			let settled = false;
+
+			let timer: number;
+
+			const startTimeout = () => {
+				window.clearTimeout(timer);
+
+				timer = window.setTimeout(() => {
+					if (settled) return;
+					// Mark as unresponsive so closeWorker() terminates.
+					this.engineStatus = EngineStatus.Unresponsive;
+					fail(new Error(`Engine timeout on cmd=${command} after ${timeoutMs}ms`));
+				}, timeoutMs);
+			};
 
 			const cleanup = () => {
 				worker.onmessage = null;
@@ -302,11 +317,8 @@ export default class LatexEngine {
 				reject(e instanceof Error ? e : new Error(String(e)));
 			};
 
-			const timer = window.setTimeout(() => {
-				// Mark as unresponsive so closeWorker() terminates.
-				this.engineStatus = EngineStatus.Unresponsive;
-				fail(new Error(`Engine timeout on cmd=${command} after ${timeoutMs}ms`));
-			}, timeoutMs);
+
+			startTimeout();
 
 			worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
 				const message = event.data;
@@ -322,6 +334,16 @@ export default class LatexEngine {
 								`Engine ${this.engineName} worker error: ${JSON.stringify(message) ?? 'unknown error'}`,
 							),
 						);
+						return;
+					}
+					
+					if (message?.cmd === EngineCommands.DownloadStarted) {
+						window.clearTimeout(timer);
+						return;
+					}
+
+					if (message?.cmd === EngineCommands.DownloadFinished) {
+						startTimeout();
 						return;
 					}
 
