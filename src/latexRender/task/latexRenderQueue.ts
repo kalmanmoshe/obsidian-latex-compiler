@@ -67,7 +67,7 @@ export class LatexRenderQueue {
 			// Promotion moves the job behind jobs already waiting at this priority.
 			job.sequence = this.nextSequence++;
 		}
-		this.updateQueueCountdown();
+		this.removeFromWaiting(task => !task.isStillValid())
 		this.scheduleDrain();
 		return completion;
 	}

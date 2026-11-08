@@ -50,7 +50,11 @@ export default class LatexCompilerPlugin extends Plugin {
 			this.setCodeblocks();
 		} catch (e) {
 			console.error('Error setting code blocks:', e);
-			new Notice('Error setting code blocks. Please check the console for more details.');
+			const languages = Object.keys(LATEX_CODE_BLOCKS).join(', ');
+			new Notice(
+				`Latex Compiler: Error setting code blocks.\nPlease disable all plugins using ${languages} as a code block language and reload Obsidian.`,
+				10000,
+			);
 		}
 		this.watchFiles();
 		//some commands are only available when the compiler is enabled, so we need to check that before adding them
