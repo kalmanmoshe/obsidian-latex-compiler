@@ -1,7 +1,7 @@
 {
 	"id": "latex-compiler",
 	"name": "Latex Compiler",
-	"version": "1.0.5",
+	"version": "1.0.6",
 	"minAppVersion": "1.8.7",
 	"description": "Compile LaTeX and Tikz directly within code blocks to PDF or SVG, and include vault files. No LaTeX installation required.",
 	"author": "Moshe Weinstock",
