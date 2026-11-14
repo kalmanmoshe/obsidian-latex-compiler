@@ -388,7 +388,10 @@ export class LatexRenderer {
 	private async renderLatexToPDF(
 		source: string,
 		sourcePath: string,
-		config: { fetchPkgData?: boolean; cacheId?: string } = {},
+		config: { 
+			fetchPkgData?: boolean; 
+			cacheId?: string
+		} = {},
 	): Promise<{
 		result: CompileResult;
 		compilationSession: LatexRenderCompilationSession;

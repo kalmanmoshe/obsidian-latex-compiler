@@ -156,7 +156,7 @@ export type MacroInfo = {
 	 * whether optional arguments are present. For example, if this function parses
 	 * a node with signature `o m`, it should ways return a length-two array of arguments.
 	 * A "blank" argument (one that does not show up during printing) can be created
-	 * with `args([], { openMark: "", closeMark: "" })`, using the `unified-latex-builder` package.
+	 * with an empty node list and empty opening and closing marks.
 	 */
 	argumentParser?: ArgumentParser;
 };

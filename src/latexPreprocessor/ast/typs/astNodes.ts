@@ -178,43 +178,11 @@ export class String extends StringNode {
 	}
 }
 
-export class Whitespace extends BaseNode {
+export class Whitespace extends StringNode {
 	readonly type = 'whitespace';
 
-	toString(): string {
-		if (!this.position?.start || !this.position?.end) {
-			return ' ';
-		}
-
-		const { start, end } = this.position;
-
-		// Single-line whitespace
-		if (start.line === end.line) {
-			return ' '.repeat(Math.max(0, end.column - start.column));
-		}
-
-		let result = '';
-
-		// First line: from start.column to end of line
-		// We don't know the original line length, so just preserve
-		// the indentation part.
-		result += ' '.repeat(Math.max(0, start.column - 1));
-
-		// Intermediate full blank lines
-		for (let line = start.line; line < end.line; line++) {
-			result += '\n';
-		}
-
-		// Last line indentation
-		result += ' '.repeat(Math.max(0, end.column - 1));
-
-		return result;
-	}
-
 	clone(): this {
-		const clone = new Whitespace(this.renderInfo, clonePosition(this.position)) as this;
-
-		return clone;
+		return new Whitespace(this.content, this.renderInfo, clonePosition(this.position)) as this;
 	}
 }
 
@@ -305,7 +273,7 @@ export class Macro extends StringNode {
 	}
 
 	toString(): string {
-		const prefix = this.renderInfo?.escapeToken || '';
+		const prefix = this.escapeToken ?? this.renderInfo?.escapeToken ?? '';
 		return (
 			prefix + this.content + (this.args ? this.toStringArgs() : '') // +
 			//(this.renderInfo?.breakAfter ? '\n' : '')
@@ -399,6 +367,7 @@ export class Environment extends ContentNode {
 		args?: Argument[],
 		renderInfo?: RenderInfo,
 		position?: Position,
+		private readonly sourceDelimiters?: readonly [string, string],
 	) {
 		super(content, renderInfo, position);
 		this.type = type;
@@ -414,30 +383,22 @@ export class Environment extends ContentNode {
 			this.args?.map((arg) => arg.clone()),
 			this.renderInfo,
 			clonePosition(this.position),
+			this.sourceDelimiters,
 		) as this;
 
 		return clone;
 	}
 
 	toString(): string {
-		let string = `\\begin{${this.env}}`;
-		if (this.args) {
-			string += this.args.map((arg) => arg.toString()).join('');
+		const args = this.args?.join('') ?? '';
+		const body = this.content.join('');
+		if (this.sourceDelimiters) {
+			return this.sourceDelimiters[0] + args + body + this.sourceDelimiters[1];
 		}
-		string +=
-			//'\n' +
-			indentString(this.content.map((node) => node.toString()).join('')); // +
-		//'\n';
-		string += `\\end{${this.env}}\n`;
-		return string;
+		const linebreak = body.endsWith('\n') ? '' : '\n';
+		return '\\begin{' + this.env + '}' + args + '\n' + body + linebreak +
+			'\\end{' + this.env + '}\n';
 	}
-}
-
-function indentString(input: string, indent: string = '\t'): string {
-	return input
-		.split('\n')
-		.map((line) => indent + line)
-		.join('\n');
 }
 
 export class VerbatimEnvironment extends StringNode {
@@ -477,8 +438,17 @@ export class DisplayMath extends ContentNode {
 
 export class Group extends ContentNode {
 	readonly type = 'group';
+
+	constructor(content: Node[], readonly openMark = '{', private readonly closeMark = '}') {
+		super(content);
+	}
+
+	clone(): this {
+		return new Group(this.content.map((node) => node.clone()), this.openMark, this.closeMark) as this;
+	}
+
 	toString(): string {
-		return `{${this.content.map((node) => node.toString()).join('')}}`;
+		return this.openMark + this.content.join('') + this.closeMark;
 	}
 }
 
@@ -532,6 +502,7 @@ export class Argument extends ContentNode {
 		content: Node[],
 		renderInfo?: RenderInfo,
 		position?: typeof BaseNode.prototype.position,
+		private readonly prefix = '',
 	) {
 		super(content, renderInfo, position);
 		this.openMark = openMark;
@@ -545,14 +516,14 @@ export class Argument extends ContentNode {
 			this.content.map((node) => node.clone()),
 			this.renderInfo,
 			clonePosition(this.position),
+			this.prefix,
 		);
 
 		return clone;
 	}
 
 	toString(): string {
-		let string = this.openMark + this.toStringContent() + this.closeMark;
-		return string;
+		return this.prefix + this.openMark + this.toStringContent() + this.closeMark;
 	}
 
 	toStringContent(): string {

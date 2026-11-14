@@ -51,7 +51,6 @@
   "dependencies": {
     "@resvg/resvg-wasm": "^2.6.2",
     "@types/async": "^3.2.24",
-    "@unified-latex/unified-latex-util-parse": "^1.8.1",
     "async": "^3.2.6",
     "brotli-dec-wasm": "2.3.2",
     "esbuild-plugin-inline-import": "^1.1.0",

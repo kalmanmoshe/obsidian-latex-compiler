@@ -1,14 +1,7 @@
 import { Macro, Environment, Argument, Node, DependencyMacro } from './typs/astNodes';
 import { LatexAbstractSyntaxTree } from './latexAbstractSyntaxTree';
 import { Notice } from 'obsidian';
-
-const preambleMacros = [
-	'documentclass',
-	'usepackage',
-	'usetikzlibrary',
-	'bibliography',
-	'pgfplotsset', //inclode pgfplots must go before
-];
+import { findMatchingBracket, preambleMacroArguments } from './latexParser';
 
 //TODO: make this usable
 /**
@@ -39,7 +32,7 @@ export function verifyEnvironmentWrap(ast: LatexAbstractSyntaxTree): Node[] | un
 		if (node.isWhitespaceLike()) return false;
 
 		if (node instanceof Macro) {
-			if (preambleMacros.includes(node.content)) return false;
+			if (preambleMacroArguments.has(node.content)) return false;
 			if (node instanceof DependencyMacro && node.autoUse) return false;
 		}
 
@@ -193,31 +186,6 @@ function getEnvironmentStructure(envNodes: Environment[]) {
 		return a.value.localeCompare(b.value);
 	});
 	return sortedEnvs;
-}
-
-const bracketPairs = {
-	'(': ')',
-	')': '(',
-	'[': ']',
-	']': '[',
-	'{': '}',
-	'}': '{',
-};
-
-function findMatchingBracket(content: Node[], index: number) {
-	if (!content[index].isString() || !(content[index].content in bracketPairs))
-		throw new Error('Not a bracket');
-	const bracket = content[index].content;
-	const bracketPair = bracketPairs[bracket as keyof typeof bracketPairs];
-	let count = 0;
-	for (let i = index; i < content.length; i++) {
-		const node = content[i];
-		if (!node.isString()) continue;
-		if (node.content === bracket) count++;
-		if (node.content === bracketPair) count--;
-		if (count === 0) return i;
-	}
-	throw new Error('No matching bracket found');
 }
 
 /**

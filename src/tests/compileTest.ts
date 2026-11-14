@@ -6,6 +6,7 @@ import {
 	getLatexTaskSectionInfosFromFile,
 	TaskSectionInformation,
 } from 'src/latexRender/resolvers/taskSectionInformation';
+import { LATEX_CODE_BLOCKS } from 'src/latexRender/codeBlockTypes';
 
 export function getTestCommands(plugin: LatexCompilerPlugin): Command[] {
 	return [
@@ -139,7 +140,9 @@ class CompileTest {
 		this.sectionsByFile = await Promise.all(
 			files.map(async (file) => ({
 				file,
-				codeBlockSections: await getLatexTaskSectionInfosFromFile(file, plugin.app),
+				codeBlockSections: (await getLatexTaskSectionInfosFromFile(file, plugin.app)).filter((section) => 
+						LATEX_CODE_BLOCKS[section.language as keyof typeof LATEX_CODE_BLOCKS].render
+					),
 			})),
 		);
 

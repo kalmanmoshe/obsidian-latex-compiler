@@ -7,7 +7,6 @@ import {
 } from '../latexRender/resolvers/paths';
 import { LatexDependency } from 'src/latexRender/latexDependency';
 import { App } from 'obsidian';
-import { findLatexInputReferences } from './latexInputScanner';
 import { VirtualFileSystem } from './virtualFileSystem';
 import { CompilePipeline } from 'src/settings/settings';
 
@@ -47,17 +46,16 @@ export class LatexSourceProcessor {
 		);
 	}
 
-	private async processTikzCodeBlock(
+	private processTikzCodeBlock(
 		content: string,
 		sourcePath: string,
 	) {
 
-		const surfaceDependencyPaths = await this.collectSurfaceDependencyPaths(
-			content,
-			sourcePath,
+		const { ast, inputReferences } = LatexAbstractSyntaxTree.parse(content);
+		const basePath = getBasePath(sourcePath);
+		const surfaceDependencyPaths = new Set(
+			inputReferences.map(({ path }) => resolvePathRelToVault(path, basePath, this.app)),
 		);
-
-		const ast = LatexAbstractSyntaxTree.parse(content);
 
 		const autoUseFiles = this.vfs
 			.getAutoUseFilePaths()
@@ -78,27 +76,6 @@ export class LatexSourceProcessor {
 			path: sourcePath,
 		};
 	}
-	private async collectSurfaceDependencyPaths(
-		content: string,
-		sourcePath: string,
-	): Promise<Set<string>> {
-
-		const basePath = getBasePath(sourcePath);
-		const paths = new Set<string>();
-
-		for (const ref of findLatexInputReferences(content)) {
-			const resolvedPath = resolvePathRelToVault(
-				ref.path,
-				basePath,
-				this.app,
-			);
-
-			paths.add(resolvedPath);
-		}
-
-		return paths;
-	}
-
 }
 
 function getBasePath(sourcePath: string): string {

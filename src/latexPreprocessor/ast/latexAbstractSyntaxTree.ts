@@ -1,8 +1,7 @@
 import { String, Macro, Argument, Node, DependencyMacro } from './typs/astNodes';
-import { parse } from './autoParse/ast-types-pre';
+import { parse } from './latexParser';
 import { verifyEnvironmentWrap } from './verifyEnvironmentWrap';
 
-//I need to Stop using the AST for inputs and only add and remove inputs through the dependencies.
 export class LatexAbstractSyntaxTree {
 	protected content: Node[];
 
@@ -11,8 +10,8 @@ export class LatexAbstractSyntaxTree {
 	}
 
 	static parse(latex: string) {
-		const content = parse(latex).content;
-		return new LatexAbstractSyntaxTree(content);
+		const { root, inputReferences } = parse(latex);
+		return { ast: new LatexAbstractSyntaxTree(root.content), inputReferences };
 	}
 
 	verifyProperDocumentStructure() {
@@ -68,26 +67,20 @@ export class LatexAbstractSyntaxTree {
 				]),
 			);
 		}
-		const index = this.getAddInputFileIndex(true);
+		const index = this.getAddInputFileIndex();
 
 		this.spliceContent(index, 0, ...macros);
 	}
 
-	private getAddInputFileIndex(isAutoUseFile = false) {
-		//i want it to go after the documentclass and after the auto use files
-		//the start index is
-		const startIndex = this.content.findIndex((node) => {
-			if (!node.isMacro()) return true;
-			if (node.content === 'documentclass') return false;
-			if (node instanceof DependencyMacro) {
-				// If the file is auto use, then we want the index to be after only the auto use files.
-				return isAutoUseFile ? !node.autoUse : false;
-			}
-			// important: normal macro like pgfplotsset
-			// should be the insertion point
-			return true;
-		});
-		return startIndex === -1 ? 0 : startIndex;
+	private getAddInputFileIndex() {
+		let index = this.content.findIndex(
+			(node) => node.isMacro() && node.content === 'documentclass',
+		) + 1;
+		let node = this.content[index];
+		while (node instanceof DependencyMacro && node.autoUse) {
+			node = this.content[++index];
+		}
+		return index;
 	}
 
 	replaceContent(nodes: Node[]) {
@@ -113,8 +106,8 @@ export class LatexAbstractSyntaxTree {
 
 	reParse() {
 		const latex = this.toString();
-		const newAst = parse(latex);
-		this.replaceContent(newAst.content);
+		const { root } = parse(latex);
+		this.replaceContent(root.content);
 	}
 }
 
