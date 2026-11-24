@@ -91,6 +91,7 @@ export default class LatexEngine {
 	protected worker: Worker | undefined;
 	protected engineStatus: EngineStatus = EngineStatus.Init;
 	protected tasks: string[] = [];
+	private cancelTask?: (error: Error) => void;
 
 	constructor(
 		private readonly createWorker: () => Promise<Worker>,
@@ -299,8 +300,10 @@ export default class LatexEngine {
 			};
 
 			const cleanup = () => {
+				window.clearTimeout(timer);
 				worker.onmessage = null;
 				worker.onerror = null;
+				this.cancelTask = undefined;
 			};
 
 			const ok = (v: T) => {
@@ -317,6 +320,7 @@ export default class LatexEngine {
 				reject(e instanceof Error ? e : new Error(String(e)));
 			};
 
+			this.cancelTask = fail;
 
 			startTimeout();
 
@@ -324,6 +328,7 @@ export default class LatexEngine {
 				const message = event.data;
 
 				void (async () => {
+					if (settled) return;
 					if (
 						message?.cmd === EngineCommands.WorkerError ||
 						message?.cmd === EngineCommands.WorkerRejection
@@ -350,7 +355,7 @@ export default class LatexEngine {
 					if (onIntermediateMessage) {
 						const handled = await onIntermediateMessage(message);
 
-						if (handled) {
+						if (settled || handled) {
 							return;
 						}
 					}
@@ -371,6 +376,7 @@ export default class LatexEngine {
 					ok(Object.keys(data).length ? (data as T) : (undefined as T));
 
 				})().catch((err) => {
+					if (settled) return;
 					window.clearTimeout(timer);
 					this.engineStatus = EngineStatus.Failed;
 					fail(err);
@@ -384,7 +390,12 @@ export default class LatexEngine {
 				fail(new Error(`Engine ${this.engineName} worker error: ${err.message}`));
 			};
 
-			worker.postMessage(task);
+			try {
+				worker.postMessage(task);
+			} catch (error) {
+				this.engineStatus = EngineStatus.Failed;
+				fail(error);
+			}
 		});
 	}
 
@@ -445,8 +456,13 @@ export default class LatexEngine {
 	}
 
 	closeWorker(): void {
+		this.cancelTask?.(new Error(`Engine ${this.engineName} worker closed.`));
 		if (this.worker) {
-			if (this.engineStatus === EngineStatus.Unresponsive) {
+			if (
+				this.engineStatus === EngineStatus.Unresponsive ||
+				this.engineStatus === EngineStatus.Busy ||
+				this.engineStatus === EngineStatus.Failed
+			) {
 				try {
 					// If it’s hung, it will never process "grace" anyway.
 					// Terminate is the only reliable stop.

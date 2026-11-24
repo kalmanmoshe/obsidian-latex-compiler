@@ -2,6 +2,7 @@ import typescriptEslintParser from "@typescript-eslint/parser";
 import typescriptEslintPlugin from "@typescript-eslint/eslint-plugin";
 import obsidianmd from "eslint-plugin-obsidianmd";
 import globals from "globals";
+import js from "@eslint/js";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig(
@@ -30,7 +31,21 @@ export default defineConfig(
     "src/generated/**",
   ]),
 
-  ...obsidianmd.configs.recommended,
+  {
+    files: ["src/**/*.ts", "src/**/*.tsx"],
+    extends: obsidianmd.configs.recommended,
+  },
+
+  {
+    name: "project/tests",
+    files: ["tests/**/*.mjs"],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
 
   {
     name: "project/typescript",

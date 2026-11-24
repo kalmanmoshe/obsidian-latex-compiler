@@ -1,0 +1,14 @@
+This is pdfTeX, Version 3.141592653
+(./main.tex
+(./__deps/0.tex
+! Undefined control sequence.
+l.7 \unknowncommand
+
+
+)
+LaTeX Warning: Reference `missing' on page 1 undefined on input line 12.
+Package hyperref Warning: Token not allowed in a PDF string:
+(hyperref)                removing `math shift' on input line 14.
+
+Overfull \hbox (4.0pt too wide) in paragraph at lines 15--16
+)

@@ -452,6 +452,7 @@ export default class ResultFileCache {
 			this.cacheMap.delete(rawHash);
 		}
 
+		await this.saveCache();
 		return fileRemoved || index !== -1;
 	}
 
@@ -468,6 +469,7 @@ export default class ResultFileCache {
 	 */
 	async removeAllCached(): Promise<void> {
 		await this.cache.clearCache();
+		this.cacheMap.clear();
 		await this.saveCache();
 	}
 
@@ -548,7 +550,7 @@ export default class ResultFileCache {
 		if (typeof content === "string") {
 			return content.length > 0;
 		} else {
-			return content.buffer.byteLength > 0;
+			return content.byteLength > 0;
 		}
 	}
 
