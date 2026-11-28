@@ -53,8 +53,17 @@ export class LatexSourceProcessor {
 
 		const { ast, inputReferences } = LatexAbstractSyntaxTree.parse(content);
 		const basePath = getBasePath(sourcePath);
+
+		// If a dependency path cannot be resolved in the vault,
+		// keep the original path and continue safely.
 		const surfaceDependencyPaths = new Set(
-			inputReferences.map(({ path }) => resolvePathRelToVault(path, basePath, this.app)),
+			inputReferences.map(({ path }) => {
+				try {
+					return resolvePathRelToVault(path, basePath, this.app);
+				} catch {
+					return path;
+				}
+			})
 		);
 
 		const autoUseFiles = this.vfs

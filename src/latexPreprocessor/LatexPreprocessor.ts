@@ -28,12 +28,12 @@ export class BasicLatexPreprocessor implements LatexPreprocessor {
         lines = lines.map(line => line.trim());
         // Remove empty lines 
         content = lines.filter(line => line).join("\n");
-        if (content.match('\\\\documentclass') === null) {
-            content = '\\documentclass{standalone}\n' + content;
+
+        const hasDocumentClass = /^[ \t]*\\documentclass\b/m.test(content);
+        if (!hasDocumentClass) {
+            content = '\\documentclass{standalone}\n\\usepackage{tikz}\n' + content;
         }
-        if (content.match('\\\\begin *{document}') === null) {
-            content = '\\begin{document}\n' + content + '\n\\end{document}\n';
-        }
+        
         return content;
     }
 
